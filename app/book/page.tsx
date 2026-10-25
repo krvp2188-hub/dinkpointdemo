@@ -18,6 +18,21 @@ type Booking = {
   status: string
 }
 
+function formatTime(time: string): string {
+  const [hours, minutes = '00'] = time.split(':')
+  const hour = Number(hours)
+
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
+    return time
+  }
+
+  const period = hour >= 12 ? 'PM' : 'AM'
+  const displayHour = hour % 12 || 12
+
+  return `${displayHour}:${minutes} ${period}`
+}
+
+
 export default function BookingPage() {
   const router = useRouter()
 
@@ -461,7 +476,7 @@ if (result.error) {
         className="border-b border-[#E8EDE8] last:border-b-0"
       >
         <td className="whitespace-nowrap bg-[#FAFBF8] p-4 font-bold text-[#263F34]">
-          {time}–{endTime}
+          {formatTime(time)}–{formatTime(endTime)}
         </td>
 
         {courts.map(function (court) {
