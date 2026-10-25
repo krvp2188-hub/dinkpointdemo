@@ -25,8 +25,7 @@ export default function BookingPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
 
   const [selectedDate, setSelectedDate] = useState('')
-  const [selectedCourt, setSelectedCourt] = useState('')
-  const [selectedTimes, setSelectedTimes] = useState<string[]>([])
+  const [selectedSlots, setSelectedSlots] = useState<{ courtId: string; time: string }[]>([])
 
   const [customerName, setCustomerName] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
@@ -233,64 +232,44 @@ useEffect(() => {
     return String(endHour).padStart(2, '0') + ':00'
   }
 
-  function selectSlot(courtId: string, time: string) {
-    if (isBooked(courtId, time)) {
-      return
-    }
 
-    setMessage('')
-    setBookingReference('')
+function selectSlot(courtId: string, time: string) {
+  if (isBooked(courtId, time)) return
 
-    // If no court has been selected yet,
-    // start selecting slots on this court.
-    if (!selectedCourt) {
-      setSelectedCourt(courtId)
-      setSelectedTimes([time])
-      return
-    }
+  console.log('CLICKED SLOT:', { courtId, time })
 
-    // Prevent selecting slots from different courts
-    // in the same booking.
-    if (selectedCourt !== courtId) {
-      setSelectedCourt(courtId)
-      setSelectedTimes([time])
-      return
-    }
+  setMessage('')
+  setBookingReference('')
 
-    // Toggle the selected time.
-    if (selectedTimes.includes(time)) {
-      const updatedTimes = selectedTimes.filter(function (item) {
-        return item !== time
-      })
+  setSelectedSlots((previousSlots) => {
+    console.log('BEFORE UPDATE:', previousSlots)
 
-      setSelectedTimes(updatedTimes)
-
-      if (updatedTimes.length === 0) {
-        setSelectedCourt('')
-      }
-
-      return
-    }
-
-    setSelectedTimes(
-      [...selectedTimes, time].sort(function (a, b) {
-        const hourA = Number(a.split(':')[0])
-        const hourB = Number(b.split(':')[0])
-
-        return hourA - hourB
-      })
+    const alreadySelected = previousSlots.some(
+      (slot) => slot.courtId === courtId && slot.time === time
     )
-  }
+
+    const nextSlots = alreadySelected
+      ? previousSlots.filter(
+          (slot) => !(slot.courtId === courtId && slot.time === time)
+        )
+      : [...previousSlots, { courtId, time }]
+
+    console.log('AFTER UPDATE:', nextSlots)
+
+    return nextSlots
+  })
+}
+
 
   function getTotalPrice() {
-    return selectedTimes.reduce(function (total, time) {
-      return total + getPrice(time)
+    return selectedSlots.reduce(function (total, slot) {
+      return total + getPrice(slot.time)
     }, 0)
   }
 
 async function createBooking() {
-  if (!selectedDate || !selectedCourt || selectedTimes.length === 0) {
-    setMessage('Please select a date, court, and at least one time.')
+  if (!selectedDate || selectedSlots.length === 0) {
+    setMessage('Please select a date and at least one court/time slot.')
     return
   }
 
@@ -320,9 +299,9 @@ async function createBooking() {
     p_customer_name: customerName.trim(),
     p_customer_email: customerEmail.trim(),
     p_customer_phone: customerPhone.trim(),
-    p_court_id: selectedCourt,
+    p_court_ids: selectedSlots.map((slot) => slot.courtId),
     p_booking_date: selectedDate,
-    p_start_times: selectedTimes,
+    p_start_times: selectedSlots.map((slot) => slot.time),
   })
 
 if (result.error) {
@@ -340,18 +319,15 @@ if (result.error) {
   return
 }
 
-  const bookedCourt = courts.find(function (court) {
-    return court.id === selectedCourt
-  })
-
-  const courtName = bookedCourt ? bookedCourt.name : ''
-
-  const firstTime = selectedTimes[0]
-  const lastTime = selectedTimes[selectedTimes.length - 1]
-
-  const timeRange =
-    firstTime + '–' + getEndTime(lastTime)
-
+  const selectedCourtNames = Array.from(new Set(selectedSlots.map((slot) => {
+    return courts.find((court) => court.id === slot.courtId)?.name || 'Court'
+  })))
+  const courtName = selectedCourtNames.length === 1
+    ? selectedCourtNames[0]
+    : selectedCourtNames.join(', ')
+  const timeRange = selectedSlots.length === 1
+    ? selectedSlots[0].time + '–' + getEndTime(selectedSlots[0].time)
+    : selectedSlots.length + ' selected court-hours'
   const totalAmount = getTotalPrice()
 
   router.push(
@@ -378,11 +354,6 @@ if (result.error) {
       </main>
     )
   }
-
-  const selectedCourtName =
-    courts.find(function (court) {
-      return court.id === selectedCourt
-    })?.name || ''
 
   return (
     <main className="min-h-screen bg-[#F7F8F5] text-[#263F34]">
@@ -419,8 +390,8 @@ if (result.error) {
             Book your next game
           </h1>
           <p className="mt-3 max-w-2xl leading-6 text-[#E1E8E2]">
-            Choose your date, court, and preferred time. You can select multiple
-            consecutive or individual hours on the same court.
+            Choose your date, then select any available hours across Courts 1–6.
+            You can combine different courts and times in one booking.
           </p>
         </div>
 
@@ -434,8 +405,7 @@ if (result.error) {
             value={selectedDate}
             onChange={function (event) {
               setSelectedDate(event.target.value)
-              setSelectedCourt('')
-              setSelectedTimes([])
+              setSelectedSlots([])
               setMessage('')
               setBookingReference('')
             }}
@@ -497,9 +467,9 @@ if (result.error) {
         {courts.map(function (court) {
           const booked = isBooked(court.id, time)
 
-          const selected =
-            selectedCourt === court.id &&
-            selectedTimes.includes(time)
+          const selected = selectedSlots.some(
+            (slot) => slot.courtId === court.id && slot.time === time
+          )
 
           const price = getPrice(time)
 
@@ -538,7 +508,7 @@ if (result.error) {
           </table>
         </div>
 
-        {selectedCourt && selectedTimes.length > 0 && (
+        {selectedSlots.length > 0 && (
           <div className="mt-8 rounded-3xl border border-[#E5EAE3] bg-white p-6 shadow-sm sm:p-8">
 
             <h2 className="text-xl font-bold">
@@ -552,26 +522,22 @@ if (result.error) {
               </p>
 
               <p>
-                <strong>Court:</strong> {selectedCourtName}
+                <strong>Courts:</strong> {Array.from(new Set(selectedSlots.map((slot) => courts.find((court) => court.id === slot.courtId)?.name || 'Court'))).join(', ')}
               </p>
 
               <div className="mt-3">
                 <strong>Selected Hours:</strong>
 
                 <div className="mt-2 space-y-2">
-                  {selectedTimes.map(function (time) {
+                  {selectedSlots.map(function (slot) {
+                    const courtName = courts.find((court) => court.id === slot.courtId)?.name || 'Court'
                     return (
                       <div
-                        key={time}
-                        className="flex items-center justify-between rounded-lg bg-white p-3"
+                        key={slot.courtId + '-' + slot.time}
+                        className="flex items-center justify-between gap-3 rounded-lg bg-white p-3"
                       >
-                        <span>
-                          {time}–{getEndTime(time)}
-                        </span>
-
-                        <span className="font-semibold">
-                          ₱{getPrice(time)}
-                        </span>
+                        <span>{courtName} · {slot.time}–{getEndTime(slot.time)}</span>
+                        <span className="shrink-0 font-semibold">₱{getPrice(slot.time)}</span>
                       </div>
                     )
                   })}
@@ -581,7 +547,7 @@ if (result.error) {
               <div className="mt-4 border-t pt-4">
                 <p>
                   <strong>Total Hours:</strong>{' '}
-                  {selectedTimes.length}
+                  {selectedSlots.length}
                 </p>
 
                 <p className="mt-1 text-xl font-bold">
