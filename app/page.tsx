@@ -248,7 +248,7 @@ export default async function Home() {
                     <div>
                       <p className="text-xs text-[#66736C]">Starting at</p>
                       <p className="mt-1 text-xl font-black">
-                        ₱{court.price_per_hour}
+                        ₱210
                         <span className="ml-1 text-xs font-medium text-[#66736C]">
                           / hour
                         </span>
@@ -428,27 +428,37 @@ export default async function Home() {
               <div>
                 <p className="font-bold">Drink Point Pickleball</p>
                 <p className="mt-1 text-sm leading-6 text-[#66736C]">
-                  Venue address to be added
+                  Prk. 4-B. Barangay Salvacion, Panabo City. In front of Fortune Philippine College of Trades and Technology Inc. 
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="relative flex min-h-[280px] items-center justify-center overflow-hidden rounded-3xl border border-[#E5EAE3] bg-[#F0F2EC] p-8 text-center">
-            <div className="absolute -left-12 -top-12 h-40 w-40 rounded-full bg-[#D6E3A6]/60 blur-2xl" />
-            <div className="absolute -bottom-12 -right-12 h-40 w-40 rounded-full bg-[#9676A5]/30 blur-2xl" />
 
-            <div className="relative max-w-sm">
-              <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#9676A5] text-3xl text-white shadow-lg">
-                ⌖
-              </span>
-              <h3 className="mt-5 text-xl font-extrabold">Find Drink Point</h3>
-              <p className="mt-2 text-sm leading-6 text-[#66736C]">
-                The real map and directions can be added once the venue address
-                or Google Maps share link is confirmed.
-              </p>
-            </div>
-          </div>
+<div className="relative min-h-[280px] overflow-hidden rounded-3xl border border-[#E5EAE3] bg-white">
+  <iframe
+    title="Drink Point Pickleball location"
+    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d831.9216464269175!2d125.68599179912917!3d7.3191940222398975!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32f94500327f6de5%3A0x849a9f29d589247e!2sFortune%20Philippine%20College%20of%20Trades%20and%20Technology%2C%20Inc.!5e0!3m2!1sen!2sph!4v1792967709698!5m2!1sen!2sph" width="800" height="600" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"
+    width="100%"
+    height="100%"
+    style={{ border: 0, minHeight: '320px' }}
+    loading="lazy"
+    allowFullScreen
+    referrerPolicy="no-referrer-when-downgrade"
+  />
+  <div className="p-4">
+    <a
+      href="https://maps.app.goo.gl/CinzCFN4Fg7NTmPN7"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex rounded-xl bg-[#9676A5] px-5 py-3 font-bold text-white transition hover:bg-[#79558C]"
+    >
+      Open in Google Maps ↗
+    </a>
+  </div>
+</div>
+
+		  
         </div>
       </section>
 
