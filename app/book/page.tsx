@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 type Court = {
@@ -34,8 +33,6 @@ function formatTime(time: string): string {
 
 
 export default function BookingPage() {
-  const router = useRouter()
-
   const [courts, setCourts] = useState<Court[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
 
@@ -305,57 +302,57 @@ async function createBooking() {
   setMessage('')
   setBookingReference('')
 
-  const reference = 'PB-' + Date.now()
+  try {
+    const response = await fetch('/api/create-booking', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        customerName: customerName.trim(),
+        customerEmail: customerEmail.trim(),
+        customerPhone: customerPhone.trim(),
+        selectedDate,
+        selectedSlots,
+      }),
+    })
 
-  const result = await supabase.rpc('create_multi_booking', {
-    p_booking_reference: reference,
-    p_customer_name: customerName.trim(),
-    p_customer_email: customerEmail.trim(),
-    p_customer_phone: customerPhone.trim(),
-    p_court_ids: selectedSlots.map((slot) => slot.courtId),
-    p_booking_date: selectedDate,
-    p_start_times: selectedSlots.map((slot) => slot.time),
-  })
+    const result = await response.json()
 
-if (result.error) {
-  console.error('BOOKING ERROR MESSAGE:', result.error.message)
-  console.error('BOOKING ERROR CODE:', result.error.code)
-  console.error('BOOKING ERROR DETAILS:', result.error.details)
-  console.error('BOOKING ERROR HINT:', result.error.hint)
+    if (!response.ok) {
+      setMessage(
+        typeof result?.error === 'string'
+          ? result.error
+          : 'Unable to create booking. Please try again.'
+      )
+      setSubmitting(false)
+      return
+    }
 
-  setMessage(
-    'Booking error: ' +
-      (result.error.message || 'Unknown Supabase error')
-  )
+    if (
+      typeof result?.paymentUrl !== 'string' ||
+      typeof result?.bookingReference !== 'string'
+    ) {
+      setMessage(
+        'The booking response was incomplete. Please contact staff before trying again.'
+      )
+      setSubmitting(false)
+      return
+    }
 
-  setSubmitting(false)
-  return
-}
-
-  const selectedCourtNames = Array.from(new Set(selectedSlots.map((slot) => {
-    return courts.find((court) => court.id === slot.courtId)?.name || 'Court'
-  })))
-  const courtName = selectedCourtNames.length === 1
-    ? selectedCourtNames[0]
-    : selectedCourtNames.join(', ')
-  const timeRange = selectedSlots.length === 1
-    ? selectedSlots[0].time + '–' + getEndTime(selectedSlots[0].time)
-    : selectedSlots.length + ' selected court-hours'
-  const totalAmount = getTotalPrice()
-
-  router.push(
-    '/booking-confirmation' +
-      '?reference=' +
-      encodeURIComponent(reference) +
-      '&date=' +
-      encodeURIComponent(selectedDate) +
-      '&court=' +
-      encodeURIComponent(courtName) +
-      '&time=' +
-      encodeURIComponent(timeRange) +
-      '&amount=' +
-      encodeURIComponent(String(totalAmount))
-  )
+    setBookingReference(result.bookingReference)
+    window.location.assign(result.paymentUrl)
+    return
+  } catch (error) {
+    console.error('Booking submission failed:', error)
+    setMessage(
+      error instanceof Error
+        ? error.message
+        : 'Unable to create booking. Please try again.'
+    )
+    setSubmitting(false)
+    return
+  }
 }
 
   if (loading) {

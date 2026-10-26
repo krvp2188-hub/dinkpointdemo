@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import BookingFilters from './BookingFilters'
+import PaymentReceiptReview from './PaymentReceiptReview'
 
 type Booking = {
   id: string
@@ -468,6 +469,7 @@ export default async function StaffPage() {
               filterBookings
             }
           />
+		  <PaymentReceiptReview />
         </section>
       </div>
     </main>
