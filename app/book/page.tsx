@@ -229,15 +229,13 @@ useEffect(() => {
   function getPrice(time: string) {
     const hour = Number(time.split(':')[0])
 
-    if (hour >= 17 || hour <= 1) {
-      return 300
+    // ₱210/hour from 6:00 AM through 2:00 PM.
+    // ₱260/hour from 3:00 PM through 1:00 AM.
+    if (hour >= 15 || hour <= 1) {
+      return 260
     }
 
-    if (hour >= 12) {
-      return 250
-    }
-
-    return 200
+    return 210
   }
 
   function getEndTime(time: string) {
