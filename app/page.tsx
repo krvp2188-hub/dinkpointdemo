@@ -177,7 +177,7 @@ export default async function Home() {
         <InfoCard
           icon="₱"
           title="Starting Rate"
-          value="₱200"
+          value="₱210"
           description="Per court, per hour"
           iconClass="bg-[#9676A5]/25 text-[#654574]"
         />
@@ -248,7 +248,7 @@ export default async function Home() {
                     <div>
                       <p className="text-xs text-[#66736C]">Starting at</p>
                       <p className="mt-1 text-xl font-black">
-                        ₱200
+                        ₱210
                         <span className="ml-1 text-xs font-medium text-[#66736C]">
                           / hour
                         </span>
@@ -338,42 +338,31 @@ export default async function Home() {
               <div className="rounded-2xl border border-white/10 bg-[#B9C4C1]/40 p-5">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-white">
-                    6:00 AM – 11:59 AM
+                    6:00 AM – 3:00 PM
                   </p>
                   <span className="text-xl text-[#D6E3A6]" aria-hidden="true">
                     ☀
                   </span>
                 </div>
                 <p className="mt-2 text-3xl font-black">
-                  ₱200 <span className="text-sm font-medium">/ hour</span>
+                  ₱210 <span className="text-sm font-medium">/ hour</span>
                 </p>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-[#B9C4C1]/40 p-5">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-white">
-                    12:00 PM – 4:59 PM
+                    3:00 PM – 2:00 AM
                   </p>
                   <span className="text-xl text-[#D6E3A6]" aria-hidden="true">
                     ◷
                   </span>
                 </div>
                 <p className="mt-2 text-3xl font-black">
-                  ₱250 <span className="text-sm font-medium">/ hour</span>
+                  ₱260 <span className="text-sm font-medium">/ hour</span>
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-[#C5A5D4]/40 bg-[#9676A5] p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-white">
-                    5:00 PM – 1:59 AM
-                  </p>
-                  <span className="text-xl" aria-hidden="true">☾</span>
-                </div>
-                <p className="mt-2 text-3xl font-black">
-                  ₱300 <span className="text-sm font-medium">/ hour</span>
-                </p>
-              </div>
             </div>
 
             <Link
