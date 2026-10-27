@@ -20,32 +20,40 @@ export default function PaymentReceiptReview() {
   const [busyId, setBusyId] = useState('')
   const [message, setMessage] = useState('')
 
-  const loadReceipts = useCallback(async () => {
-    setLoading(true)
+const loadReceipts = useCallback(async (showLoading = true) => {
+  if (showLoading) setLoading(true)
 
-    try {
-      const response = await fetch('/api/pending-receipts', {
-        cache: 'no-store',
-      })
-      const result = await response.json()
+  try {
+    const response = await fetch('/api/pending-receipts', {
+      cache: 'no-store',
+    })
+    const result = await response.json()
 
-      if (!response.ok) {
-        setMessage(result.error || 'Could not load receipts.')
-        return
-      }
-
-      setReceipts(result.receipts || [])
-      setMessage('')
-    } catch {
-      setMessage('Unable to load receipts. Please try again.')
-    } finally {
-      setLoading(false)
+    if (!response.ok) {
+      setMessage(result.error || 'Could not load receipts.')
+      return
     }
-  }, [])
 
-  useEffect(() => {
-    void loadReceipts()
-  }, [loadReceipts])
+    setReceipts(result.receipts || [])
+    setMessage('')
+  } catch {
+    setMessage('Unable to load receipts. Please try again.')
+  } finally {
+    if (showLoading) setLoading(false)
+  }
+}, [])
+
+
+useEffect(() => {
+  void loadReceipts()
+
+  const intervalId = window.setInterval(() => {
+    void loadReceipts(false)
+  }, 10000)
+
+  return () => window.clearInterval(intervalId)
+}, [loadReceipts])
+
 
   async function reviewReceipt(receipt: Receipt, action: 'approve' | 'reject') {
     const promptText =
@@ -86,7 +94,7 @@ export default function PaymentReceiptReview() {
           : `Receipt rejected for ${receipt.bookingReference}.`
       )
 
-      await loadReceipts()
+await loadReceipts(false)
     } catch {
       setMessage('Unable to submit your review. Please try again.')
     } finally {
