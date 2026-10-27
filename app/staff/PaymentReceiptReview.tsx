@@ -56,15 +56,11 @@ useEffect(() => {
 
 
   async function reviewReceipt(receipt: Receipt, action: 'approve' | 'reject') {
-    const promptText =
-      action === 'approve'
-        ? 'Confirm that you have verified the actual GCash transaction, amount, recipient, and transaction reference. Type APPROVE to continue:'
-        : 'Type REJECT to reject this receipt:'
-
-    const confirmation = window.prompt(promptText)
-
-    if (confirmation !== (action === 'approve' ? 'APPROVE' : 'REJECT')) {
-      return
+    // Approval proceeds directly when staff clicks the button.
+    // Rejection keeps a confirmation prompt to prevent accidental rejection.
+    if (action === 'reject') {
+      const confirmation = window.prompt('Type REJECT to reject this receipt:')
+      if (confirmation !== 'REJECT') return
     }
 
     setBusyId(receipt.id)
@@ -190,7 +186,7 @@ await loadReceipts(false)
                   onClick={() => void reviewReceipt(receipt, 'approve')}
                   className="rounded-lg bg-green-700 px-4 py-2 font-semibold text-white disabled:opacity-50"
                 >
-                  {busyId === receipt.id ? 'Processing...' : 'Approve & Confirm'}
+                  {busyId === receipt.id ? 'Processing...' : 'Approve'}
                 </button>
 
                 <button
