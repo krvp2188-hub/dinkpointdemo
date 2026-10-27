@@ -23,3 +23,9 @@ export const paymentRateLimit = new Ratelimit({
   limiter: Ratelimit.slidingWindow(10, '1 m'),
   prefix: 'dinkpoint:payment',
 })
+
+export const receiptListRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(30, '1 m'),
+  prefix: 'dinkpoint:receipt-list',
+})

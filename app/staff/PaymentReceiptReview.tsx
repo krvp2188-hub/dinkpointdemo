@@ -49,7 +49,7 @@ useEffect(() => {
 
   const intervalId = window.setInterval(() => {
     void loadReceipts(false)
-  }, 10000)
+  }, 30000)
 
   return () => window.clearInterval(intervalId)
 }, [loadReceipts])

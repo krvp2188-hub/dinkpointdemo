@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
-import { paymentRateLimit } from '@/lib/rate-limit'
+import { receiptListRateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       )
     }
 
-    const { success } = await paymentRateLimit.limit(clientIp)
+const { success } = await receiptListRateLimit.limit(clientIp)
 
     if (!success) {
       return NextResponse.json(
