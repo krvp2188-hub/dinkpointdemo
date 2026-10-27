@@ -1,8 +1,9 @@
 
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-
+import html2canvas from 'html2canvas-pro'
 
 type PaymentSession = {
   bookingReference: string
@@ -32,8 +33,9 @@ function formatTime(time: string): string {
   return `${displayHour}:${minutes} ${period}`
 }
 
-
 export default function BookingPaymentPage() {
+  const screenshotRef = useRef<HTMLDivElement>(null)
+  const [savingScreenshot, setSavingScreenshot] = useState(false)
   const [token, setToken] = useState('')
   const tokenRef = useRef('')
   const [session, setSession] = useState<PaymentSession | null>(null)
@@ -43,7 +45,6 @@ export default function BookingPaymentPage() {
   const [receipt, setReceipt] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
-  const [copyMessage, setCopyMessage] = useState('')
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
@@ -67,10 +68,6 @@ export default function BookingPaymentPage() {
     )
 
     setToken(guestToken)
-
-
-
-
 
     async function loadSession() {
       if (!guestToken || !reference) {
@@ -111,18 +108,30 @@ export default function BookingPaymentPage() {
     void loadSession()
   }, [])
 
-
   useEffect(() => {
     if (!session || session.paymentStatus !== 'unpaid') return
+
     const intervalId = window.setInterval(() => setNow(Date.now()), 1000)
+
     return () => window.clearInterval(intervalId)
   }, [session?.paymentStatus])
 
   const secondsRemaining = session?.expiresAt
-    ? Math.max(0, Math.ceil((new Date(session.expiresAt).getTime() - now) / 1000))
+    ? Math.max(
+        0,
+        Math.ceil((new Date(session.expiresAt).getTime() - now) / 1000)
+      )
     : 0
-  const paymentExpired = Boolean(session && session.paymentStatus === 'unpaid' && secondsRemaining <= 0)
-  const countdownText = `${String(Math.floor(secondsRemaining / 60)).padStart(2, '0')}:${String(secondsRemaining % 60).padStart(2, '0')}`
+
+  const paymentExpired = Boolean(
+    session &&
+      session.paymentStatus === 'unpaid' &&
+      secondsRemaining <= 0
+  )
+
+  const countdownText = `${String(
+    Math.floor(secondsRemaining / 60)
+  ).padStart(2, '0')}:${String(secondsRemaining % 60).padStart(2, '0')}`
 
   useEffect(() => {
     if (!session || session.paymentStatus !== 'unpaid' || !token) {
@@ -151,7 +160,7 @@ export default function BookingPaymentPage() {
           setSession(result)
         }
       } catch {
-        // Keep the page open and try again at the next interval.
+        // Retry at the next interval.
       }
     }
 
@@ -165,15 +174,27 @@ export default function BookingPaymentPage() {
     }
   }, [session?.bookingReference, session?.paymentStatus, token])
 
+  async function saveBookingScreenshot() {
+    if (!screenshotRef.current || !session) return
 
-  async function copyBookingReference() {
-    if (!session?.bookingReference) return
+    setSavingScreenshot(true)
 
     try {
-      await navigator.clipboard.writeText(session.bookingReference)
-      setCopyMessage('Booking reference copied! Save it for your records.')
-    } catch {
-      setCopyMessage('Copy was unavailable. Please select and copy the reference above.')
+      const canvas = await html2canvas(screenshotRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+      })
+
+      const link = document.createElement('a')
+      link.download = `Dink-Point-${session.bookingReference}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    } catch (error) {
+      console.error('Could not save booking screenshot:', error)
+      setMessage('Could not save the screenshot. Please try again.')
+    } finally {
+      setSavingScreenshot(false)
     }
   }
 
@@ -187,7 +208,9 @@ export default function BookingPaymentPage() {
     }
 
     if (paymentExpired) {
-      setMessage('Your 15-minute payment window has expired. Please make a new booking.')
+      setMessage(
+        'Your 15-minute payment window has expired. Please make a new booking.'
+      )
       return
     }
 
@@ -253,6 +276,12 @@ export default function BookingPaymentPage() {
         <p className="mt-4 text-red-600">
           {error || 'This payment link is invalid or expired.'}
         </p>
+        <Link
+          href="/"
+          className="mt-5 inline-flex rounded-lg bg-green-700 px-4 py-3 font-semibold text-white hover:bg-green-800"
+        >
+          Back to Homepage
+        </Link>
       </main>
     )
   }
@@ -262,103 +291,159 @@ export default function BookingPaymentPage() {
       <h1 className="text-3xl font-bold">Complete Your Booking</h1>
 
       {session.paymentStatus === 'unpaid' && (
-        <section className={`mt-4 rounded-xl border p-4 ${paymentExpired ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'}`} aria-live="polite">
-          <p className="text-sm font-semibold">Time left to complete payment</p>
-          <p className={`mt-1 text-3xl font-bold tabular-nums ${paymentExpired ? 'text-red-700' : 'text-amber-900'}`}>{countdownText}</p>
-          <p className="mt-1 text-sm">{paymentExpired ? 'Your payment window has expired. Please make a new booking.' : 'Please pay and submit your GCash receipt before the timer reaches zero.'}</p>
+        <section
+          className={`mt-4 rounded-xl border p-4 ${
+            paymentExpired
+              ? 'border-red-300 bg-red-50'
+              : 'border-amber-300 bg-amber-50'
+          }`}
+          aria-live="polite"
+        >
+          <p className="text-sm font-semibold">
+            Time left to complete payment
+          </p>
+          <p
+            className={`mt-1 text-3xl font-bold tabular-nums ${
+              paymentExpired ? 'text-red-700' : 'text-amber-900'
+            }`}
+          >
+            {countdownText}
+          </p>
+          <p className="mt-1 text-sm">
+            {paymentExpired
+              ? 'Your payment window has expired. Please make a new booking.'
+              : 'Please pay and submit your GCash receipt before the timer reaches zero.'}
+          </p>
         </section>
       )}
 
+      {/* This is the only booking summary and reference screenshot area. */}
+      <div
+        ref={screenshotRef}
+        className="mt-5 rounded-xl border bg-white p-4"
+      >
+        <h2 className="mb-3 text-sm font-semibold text-green-800">
+          Dink Point Pickleball
+        </h2>
 
-<section className="mt-5 rounded-xl border p-4">
-  <h2 className="text-xl font-bold">Your Selection</h2>
+        <h2 className="text-xl font-bold">Your Selection</h2>
 
-  <div className="mt-4 rounded-2xl bg-[#F7F8F5] p-4">
-    <p>
-      <strong>Date:</strong> {session.bookingDate}
-    </p>
-
-    <p className="mt-1">
-      <strong>Courts:</strong>{' '}
-      {Array.from(new Set(session.slots.map(slot => slot.courtName))).join(', ')}
-    </p>
-
-    <div className="mt-4">
-      <strong>Selected Hours:</strong>
-
-      <div className="mt-2 space-y-2">
-        {session.slots.map((slot, index) => (
-          <div
-            key={`${slot.courtName}-${slot.startTime}-${index}`}
-            className="flex items-center justify-between gap-3 rounded-lg bg-white p-3"
-          >
-            <span>
-              {slot.courtName} · {formatTime(slot.startTime)}–{formatTime(slot.endTime)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <div className="mt-4 border-t pt-4">
-      <p>
-        <strong>Total Hours:</strong> {session.slots.length}
-      </p>
-
-      <p className="mt-1 text-xl font-bold">
-        <strong>Total:</strong>{' '}
-        ₱{session.totalAmount.toLocaleString('en-PH', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2,
-        })}
-      </p>
-    </div>
-  </div>
-</section>
-
-
-      {session.paymentStatus === 'paid' ? (
-        <section className="mt-6 rounded-xl border p-4">
-          <h2 className="text-xl font-semibold">Payment received</h2>
-          <p className="mt-2">
-            Your payment has been recorded. Save your booking reference for future inquiries.
+        <div className="mt-4 rounded-2xl bg-[#F7F8F5] p-4">
+          <p>
+            <strong>Date:</strong> {session.bookingDate}
           </p>
-          <div className="mt-4 rounded-lg bg-gray-50 p-4">
-            <p className="text-sm font-medium text-gray-600">Your booking reference</p>
-            <p className="mt-1 break-all text-lg font-bold" aria-live="polite">
+
+          <p className="mt-1">
+            <strong>Courts:</strong>{' '}
+            {Array.from(
+              new Set(session.slots.map(slot => slot.courtName))
+            ).join(', ')}
+          </p>
+
+          <div className="mt-4">
+            <strong>Selected Hours:</strong>
+
+            <div className="mt-2 space-y-2">
+              {session.slots.map((slot, index) => (
+                <div
+                  key={`${slot.courtName}-${slot.startTime}-${index}`}
+                  className="flex items-center justify-between gap-3 rounded-lg bg-white p-3"
+                >
+                  <span>
+                    {slot.courtName} · {formatTime(slot.startTime)}–
+                    {formatTime(slot.endTime)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 border-t pt-4">
+            <p>
+              <strong>Total Hours:</strong> {session.slots.length}
+            </p>
+
+            <p className="mt-1 text-xl font-bold">
+              <strong>Total:</strong>{' '}
+              ₱
+              {session.totalAmount.toLocaleString('en-PH', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+              })}
+            </p>
+          </div>
+        </div>
+
+        {session.paymentStatus === 'paid' && (
+          <section className="mt-4 rounded-xl border p-4">
+            <h2 className="text-xl font-semibold">Payment received</h2>
+            <p className="mt-2">
+              Your payment has been recorded. Save your booking reference
+              for future inquiries.
+            </p>
+
+            <div className="mt-4 rounded-lg bg-gray-50 p-4">
+              <p className="text-sm font-medium text-gray-600">
+                Your booking reference
+              </p>
+              <p className="mt-1 break-all text-lg font-bold">
+                {session.bookingReference}
+              </p>
+            </div>
+          </section>
+        )}
+
+        {session.paymentStatus === 'cancelled' && (
+          <section className="mt-4 rounded-xl border p-4">
+            <h2 className="text-xl font-semibold">Booking cancelled</h2>
+            <p className="mt-2">
+              This booking has been cancelled. Please contact staff if you
+              believe this is an error.
+            </p>
+            <p className="mt-3 text-sm text-gray-600">
+              Booking reference
+            </p>
+            <p className="mt-1 break-all font-bold">
               {session.bookingReference}
             </p>
-            <button
-              type="button"
-              onClick={() => void copyBookingReference()}
-              className="mt-3 rounded-lg bg-green-700 px-4 py-2 font-semibold text-white hover:bg-green-800"
-            >
-              Copy booking reference
-            </button>
-            {copyMessage && (
-              <p role="status" className="mt-2 text-sm">
-                {copyMessage}
-              </p>
-            )}
-          </div>
-        </section>
-      ) : session.paymentStatus === 'cancelled' ? (
-        <p className="mt-6 rounded-xl border p-4">
-          This booking has been cancelled. Please contact staff if you believe
-          this is an error.
-        </p>
-      ) : (
+          </section>
+        )}
+      </div>
+
+      {session.paymentStatus === 'paid' && (
+        <>
+          <button
+            type="button"
+            onClick={() => void saveBookingScreenshot()}
+            disabled={savingScreenshot}
+            className="mt-3 w-full rounded-lg border border-green-700 px-4 py-3 font-semibold text-green-800 hover:bg-green-50 disabled:opacity-50"
+          >
+            {savingScreenshot
+              ? 'Saving Screenshot...'
+              : 'Save Booking Screenshot'}
+          </button>
+
+          <Link
+            href="/"
+            className="mt-4 block w-full rounded-lg bg-green-700 px-4 py-3 text-center font-semibold text-white hover:bg-green-800"
+          >
+            Back to Homepage
+          </Link>
+        </>
+      )}
+
+      {session.paymentStatus === 'unpaid' && (
         <>
           <section className="mt-6 rounded-xl border p-4">
             <h2 className="text-xl font-semibold">Pay with GCash</h2>
             <img
               src="/images/QR.png"
-              alt="Drink Point Pickleball GCash QR code"
+              alt="Dink Point Pickleball GCash QR code"
               className="mx-auto mt-4 w-full max-w-xs"
             />
             <p className="mt-4 text-sm text-gray-600">
-              Pay the exact total shown above. Check the recipient details in
-              GCash before confirming.
+              Pay the exact total shown above. Check the recipient details
+              in GCash before confirming.
             </p>
           </section>
 
@@ -418,7 +503,11 @@ export default function BookingPaymentPage() {
               disabled={submitting || paymentExpired}
               className="w-full rounded-lg bg-green-700 px-4 py-3 font-semibold text-white disabled:opacity-50"
             >
-              {paymentExpired ? 'Payment Window Expired' : submitting ? 'Submitting...' : 'Submit Receipt'}
+              {paymentExpired
+                ? 'Payment Window Expired'
+                : submitting
+                  ? 'Submitting...'
+                  : 'Submit Receipt'}
             </button>
 
             {message && (
@@ -428,8 +517,8 @@ export default function BookingPaymentPage() {
             )}
 
             <p className="text-sm text-gray-500">
-              Your booking remains unconfirmed until staff verifies the actual
-              GCash transaction.
+              Your booking remains unconfirmed until staff verifies the
+              actual GCash transaction.
             </p>
           </form>
         </>
