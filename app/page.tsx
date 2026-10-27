@@ -428,7 +428,7 @@ export default async function Home() {
 
 <iframe
   title="Drink Point Pickleball location"
-  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d831.9216464269175!2d125.68599179912917!3d7.3191940222398975!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32f94500327f6de5%3A0x849a9f29d589247e!2sFortune%20Philippine%20College%20of%20Trades%20and%20Technology%2C%20Inc.!5e0!3m2!1sen!2sph!4v1792967709698!5m2!1sen!2sph"
+  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d989.32753055325!2d125.68566776961185!3d7.319018399543074!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32f9450032822f6d%3A0xbc4472bc2a99bb03!2sDink%20Point%20-%20Panabo!5e0!3m2!1sen!2sph!4v1793130182431!5m2!1sen!2sph"
   width="100%"
   height="320"
   style={{ border: 0, minHeight: '320px' }}

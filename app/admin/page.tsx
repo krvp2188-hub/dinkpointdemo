@@ -60,7 +60,12 @@ if (courtsError) {
 
 const allCourts = courts ?? []
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
 
   const todaysBookings = allBookings.filter(
     (booking) => booking.booking_date === today
@@ -83,12 +88,19 @@ const unpaidBookings = allBookings.filter(
     booking.status !== 'cancelled'
 )
 
-const todaysRevenue = todaysBookings
-  .filter((booking) => booking.status !== 'cancelled')
-  .reduce(
-    (total, booking) => total + Number(booking.amount || 0),
-    0
-  )
+
+
+  const todaysRevenue = todaysBookings
+    .filter(
+      (booking) =>
+        booking.status !== 'cancelled' &&
+        booking.payment_status === 'paid'
+    )
+    .reduce(
+      (total, booking) => total + Number(booking.amount || 0),
+      0
+    )
+
 
 return (
   <>
