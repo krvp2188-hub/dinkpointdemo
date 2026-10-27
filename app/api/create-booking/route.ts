@@ -150,7 +150,7 @@ export async function POST(request: Request) {
     const tokenHash = createHash('sha256')
       .update(guestToken)
       .digest('hex')
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
 
     const { data, error } = await supabaseAdmin.rpc(
       'create_secure_guest_booking',

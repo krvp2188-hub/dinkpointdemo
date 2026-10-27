@@ -53,8 +53,7 @@ export async function POST(request: Request) {
     const input = body as Record<string, unknown>
     const reference =
       typeof input.reference === 'string' ? input.reference.trim() : ''
-    const token =
-      typeof input.token === 'string' ? input.token : ''
+    const token = typeof input.token === 'string' ? input.token : ''
 
     if (
       !/^PB-[A-Za-z0-9-]{8,80}$/.test(reference) ||
@@ -98,8 +97,9 @@ export async function POST(request: Request) {
     const { data: bookings, error: bookingError } =
       await supabaseAdmin
         .from('bookings')
-        .select('amount, status, payment_status, booking_date, start_time')
+        .select('amount, status, payment_status, booking_date, start_time, end_time, court_id')
         .eq('booking_reference', reference)
+        .order('start_time', { ascending: true })
 
     if (bookingError || !bookings || bookings.length === 0) {
       return NextResponse.json(
@@ -107,6 +107,23 @@ export async function POST(request: Request) {
         { status: 404 }
       )
     }
+
+    const courtIds = [...new Set(bookings.map(booking => booking.court_id))]
+    const { data: courts, error: courtsError } = await supabaseAdmin
+      .from('courts')
+      .select('id, name')
+      .in('id', courtIds)
+
+    if (courtsError) {
+      return NextResponse.json(
+        { error: 'Court details could not be loaded.' },
+        { status: 500 }
+      )
+    }
+
+    const courtNames = new Map(
+      (courts ?? []).map(court => [court.id, court.name])
+    )
 
     const totalAmount = bookings.reduce((sum, booking) => {
       const amount = Number(booking.amount)
@@ -125,7 +142,9 @@ export async function POST(request: Request) {
       totalAmount,
       bookingDate: bookings[0].booking_date,
       slots: bookings.map(booking => ({
+        courtName: courtNames.get(booking.court_id) ?? 'Court',
         startTime: booking.start_time,
+        endTime: booking.end_time,
         status: booking.status,
       })),
       paymentStatus: allPaid
@@ -133,6 +152,7 @@ export async function POST(request: Request) {
         : allCancelled
           ? 'cancelled'
           : 'unpaid',
+      expiresAt: authorization.expires_at,
     })
   } catch {
     return NextResponse.json(

@@ -1,18 +1,41 @@
 
 'use client'
 
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+
 
 type PaymentSession = {
   bookingReference: string
   totalAmount: number
   bookingDate: string
-  slots: { startTime: string; status: string }[]
+  slots: {
+    courtName: string
+    startTime: string
+    endTime: string
+    status: string
+  }[]
   paymentStatus: 'paid' | 'cancelled' | 'unpaid'
+  expiresAt: string
 }
+
+function formatTime(time: string): string {
+  const [hours, minutes = '00'] = time.split(':')
+  const hour = Number(hours)
+
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
+    return time
+  }
+
+  const period = hour >= 12 ? 'PM' : 'AM'
+  const displayHour = hour % 12 || 12
+
+  return `${displayHour}:${minutes} ${period}`
+}
+
 
 export default function BookingPaymentPage() {
   const [token, setToken] = useState('')
+  const tokenRef = useRef('')
   const [session, setSession] = useState<PaymentSession | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -20,13 +43,22 @@ export default function BookingPaymentPage() {
   const [receipt, setReceipt] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
+  const [copyMessage, setCopyMessage] = useState('')
+  const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
-    const guestToken = window.location.hash.startsWith('#token=')
+    const urlToken = window.location.hash.startsWith('#token=')
       ? window.location.hash.slice(7)
       : ''
-    const reference = new URLSearchParams(window.location.search)
-      .get('reference') || ''
+
+    const guestToken = urlToken || tokenRef.current
+
+    if (guestToken) {
+      tokenRef.current = guestToken
+    }
+
+    const reference =
+      new URLSearchParams(window.location.search).get('reference') || ''
 
     window.history.replaceState(
       null,
@@ -36,9 +68,15 @@ export default function BookingPaymentPage() {
 
     setToken(guestToken)
 
+
+
+
+
     async function loadSession() {
       if (!guestToken || !reference) {
-        setError('This payment link is missing information. Please use your original booking link.')
+        setError(
+          'This payment link is missing information. Please use your original booking link.'
+        )
         setLoading(false)
         return
       }
@@ -62,7 +100,9 @@ export default function BookingPaymentPage() {
 
         setSession(result as PaymentSession)
       } catch {
-        setError('Unable to connect. Please check your internet and try again.')
+        setError(
+          'Unable to connect. Please check your internet and try again.'
+        )
       } finally {
         setLoading(false)
       }
@@ -71,12 +111,83 @@ export default function BookingPaymentPage() {
     void loadSession()
   }, [])
 
+
+  useEffect(() => {
+    if (!session || session.paymentStatus !== 'unpaid') return
+    const intervalId = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(intervalId)
+  }, [session?.paymentStatus])
+
+  const secondsRemaining = session?.expiresAt
+    ? Math.max(0, Math.ceil((new Date(session.expiresAt).getTime() - now) / 1000))
+    : 0
+  const paymentExpired = Boolean(session && session.paymentStatus === 'unpaid' && secondsRemaining <= 0)
+  const countdownText = `${String(Math.floor(secondsRemaining / 60)).padStart(2, '0')}:${String(secondsRemaining % 60).padStart(2, '0')}`
+
+  useEffect(() => {
+    if (!session || session.paymentStatus !== 'unpaid' || !token) {
+      return
+    }
+
+    let active = true
+
+    const checkPaymentStatus = async () => {
+      try {
+        const response = await fetch('/api/payment-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reference: session.bookingReference,
+            token,
+          }),
+          cache: 'no-store',
+        })
+
+        if (!response.ok) return
+
+        const result = (await response.json()) as PaymentSession
+
+        if (active) {
+          setSession(result)
+        }
+      } catch {
+        // Keep the page open and try again at the next interval.
+      }
+    }
+
+    const intervalId = window.setInterval(() => {
+      void checkPaymentStatus()
+    }, 10000)
+
+    return () => {
+      active = false
+      window.clearInterval(intervalId)
+    }
+  }, [session?.bookingReference, session?.paymentStatus, token])
+
+
+  async function copyBookingReference() {
+    if (!session?.bookingReference) return
+
+    try {
+      await navigator.clipboard.writeText(session.bookingReference)
+      setCopyMessage('Booking reference copied! Save it for your records.')
+    } catch {
+      setCopyMessage('Copy was unavailable. Please select and copy the reference above.')
+    }
+  }
+
   async function submitReceipt(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setMessage('')
 
     if (!session || !token || !receipt) {
       setMessage('Please select a receipt image.')
+      return
+    }
+
+    if (paymentExpired) {
+      setMessage('Your 15-minute payment window has expired. Please make a new booking.')
       return
     }
 
@@ -96,7 +207,10 @@ export default function BookingPaymentPage() {
       const formData = new FormData()
       formData.append('bookingReference', session.bookingReference)
       formData.append('token', token)
-      formData.append('transactionReference', transactionReference.trim())
+      formData.append(
+        'transactionReference',
+        transactionReference.trim()
+      )
       formData.append('receipt', receipt)
 
       const response = await fetch('/api/payment-receipt', {
@@ -125,7 +239,11 @@ export default function BookingPaymentPage() {
   }
 
   if (loading) {
-    return <main className="mx-auto max-w-lg p-6">Verifying your booking...</main>
+    return (
+      <main className="mx-auto max-w-lg p-6">
+        Verifying your booking...
+      </main>
+    )
   }
 
   if (error || !session || !token) {
@@ -139,49 +257,95 @@ export default function BookingPaymentPage() {
     )
   }
 
-  const dateLabel = new Date(
-    `${session.bookingDate}T00:00:00`
-  ).toLocaleDateString('en-PH', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-
   return (
     <main className="mx-auto max-w-lg p-6">
       <h1 className="text-3xl font-bold">Complete Your Booking</h1>
 
-      <section className="mt-5 rounded-xl border p-4">
-        <p className="text-sm text-gray-500">Booking reference</p>
-        <p className="font-semibold">{session.bookingReference}</p>
+      {session.paymentStatus === 'unpaid' && (
+        <section className={`mt-4 rounded-xl border p-4 ${paymentExpired ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'}`} aria-live="polite">
+          <p className="text-sm font-semibold">Time left to complete payment</p>
+          <p className={`mt-1 text-3xl font-bold tabular-nums ${paymentExpired ? 'text-red-700' : 'text-amber-900'}`}>{countdownText}</p>
+          <p className="mt-1 text-sm">{paymentExpired ? 'Your payment window has expired. Please make a new booking.' : 'Please pay and submit your GCash receipt before the timer reaches zero.'}</p>
+        </section>
+      )}
 
-        <p className="mt-4 text-sm text-gray-500">Booking date</p>
-        <p className="font-medium">{dateLabel}</p>
 
-        <p className="mt-4 text-sm text-gray-500">Selected time slots</p>
-        <p className="font-medium">
-          {session.slots.map(slot => slot.startTime).join(', ')}
-        </p>
+<section className="mt-5 rounded-xl border p-4">
+  <h2 className="text-xl font-bold">Your Selection</h2>
 
-        <p className="mt-4 text-sm text-gray-500">Total amount</p>
-        <p className="text-3xl font-bold">
-          ₱{session.totalAmount.toLocaleString('en-PH', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
-        </p>
-      </section>
+  <div className="mt-4 rounded-2xl bg-[#F7F8F5] p-4">
+    <p>
+      <strong>Date:</strong> {session.bookingDate}
+    </p>
+
+    <p className="mt-1">
+      <strong>Courts:</strong>{' '}
+      {Array.from(new Set(session.slots.map(slot => slot.courtName))).join(', ')}
+    </p>
+
+    <div className="mt-4">
+      <strong>Selected Hours:</strong>
+
+      <div className="mt-2 space-y-2">
+        {session.slots.map((slot, index) => (
+          <div
+            key={`${slot.courtName}-${slot.startTime}-${index}`}
+            className="flex items-center justify-between gap-3 rounded-lg bg-white p-3"
+          >
+            <span>
+              {slot.courtName} · {formatTime(slot.startTime)}–{formatTime(slot.endTime)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div className="mt-4 border-t pt-4">
+      <p>
+        <strong>Total Hours:</strong> {session.slots.length}
+      </p>
+
+      <p className="mt-1 text-xl font-bold">
+        <strong>Total:</strong>{' '}
+        ₱{session.totalAmount.toLocaleString('en-PH', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        })}
+      </p>
+    </div>
+  </div>
+</section>
+
 
       {session.paymentStatus === 'paid' ? (
         <section className="mt-6 rounded-xl border p-4">
           <h2 className="text-xl font-semibold">Payment received</h2>
           <p className="mt-2">
-            Your payment has been recorded. Keep your booking reference for inquiries.
+            Your payment has been recorded. Save your booking reference for future inquiries.
           </p>
+          <div className="mt-4 rounded-lg bg-gray-50 p-4">
+            <p className="text-sm font-medium text-gray-600">Your booking reference</p>
+            <p className="mt-1 break-all text-lg font-bold" aria-live="polite">
+              {session.bookingReference}
+            </p>
+            <button
+              type="button"
+              onClick={() => void copyBookingReference()}
+              className="mt-3 rounded-lg bg-green-700 px-4 py-2 font-semibold text-white hover:bg-green-800"
+            >
+              Copy booking reference
+            </button>
+            {copyMessage && (
+              <p role="status" className="mt-2 text-sm">
+                {copyMessage}
+              </p>
+            )}
+          </div>
         </section>
       ) : session.paymentStatus === 'cancelled' ? (
         <p className="mt-6 rounded-xl border p-4">
-          This booking has been cancelled. Please contact staff if you believe this is an error.
+          This booking has been cancelled. Please contact staff if you believe
+          this is an error.
         </p>
       ) : (
         <>
@@ -193,7 +357,8 @@ export default function BookingPaymentPage() {
               className="mx-auto mt-4 w-full max-w-xs"
             />
             <p className="mt-4 text-sm text-gray-600">
-              Pay the exact total shown above. Check the recipient details in GCash before confirming.
+              Pay the exact total shown above. Check the recipient details in
+              GCash before confirming.
             </p>
           </section>
 
@@ -201,17 +366,24 @@ export default function BookingPaymentPage() {
             onSubmit={submitReceipt}
             className="mt-6 space-y-4 rounded-xl border p-4"
           >
-            <h2 className="text-xl font-semibold">Submit Payment Receipt</h2>
+            <h2 className="text-xl font-semibold">
+              Submit Payment Receipt
+            </h2>
 
             <div>
-              <label htmlFor="transactionReference" className="mb-1 block text-sm font-medium">
+              <label
+                htmlFor="transactionReference"
+                className="mb-1 block text-sm font-medium"
+              >
                 GCash transaction reference
               </label>
               <input
                 id="transactionReference"
                 name="transactionReference"
                 value={transactionReference}
-                onChange={event => setTransactionReference(event.target.value)}
+                onChange={event =>
+                  setTransactionReference(event.target.value)
+                }
                 required
                 minLength={4}
                 maxLength={100}
@@ -222,7 +394,10 @@ export default function BookingPaymentPage() {
             </div>
 
             <div>
-              <label htmlFor="receipt" className="mb-1 block text-sm font-medium">
+              <label
+                htmlFor="receipt"
+                className="mb-1 block text-sm font-medium"
+              >
                 Receipt image (JPG, PNG, or WebP; max 5 MB)
               </label>
               <input
@@ -231,17 +406,19 @@ export default function BookingPaymentPage() {
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 required
-                onChange={event => setReceipt(event.target.files?.[0] || null)}
+                onChange={event =>
+                  setReceipt(event.target.files?.[0] || null)
+                }
                 className="w-full rounded-lg border p-3"
               />
             </div>
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || paymentExpired}
               className="w-full rounded-lg bg-green-700 px-4 py-3 font-semibold text-white disabled:opacity-50"
             >
-              {submitting ? 'Submitting...' : 'Submit Receipt'}
+              {paymentExpired ? 'Payment Window Expired' : submitting ? 'Submitting...' : 'Submit Receipt'}
             </button>
 
             {message && (
@@ -251,7 +428,8 @@ export default function BookingPaymentPage() {
             )}
 
             <p className="text-sm text-gray-500">
-              Your booking remains unconfirmed until staff verifies the actual GCash transaction.
+              Your booking remains unconfirmed until staff verifies the actual
+              GCash transaction.
             </p>
           </form>
         </>
