@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import BookingFilters from './BookingFilters'
 import PaymentReceiptReview from './PaymentReceiptReview'
+import StaffAutoRefresh from './StaffAutoRefresh'
 
 type Booking = {
   id: string
@@ -75,7 +76,9 @@ export default async function StaffPage() {
       created_at,
       court_id
     `)
-    .order('booking_date', { ascending: true })
+    // Show the newest-created bookings first in the staff dashboard.
+    .order('created_at', { ascending: false })
+    .order('booking_date', { ascending: false })
     .order('start_time', { ascending: true })
 
   if (error) {
@@ -347,7 +350,9 @@ export default async function StaffPage() {
     )
 
   return (
-    <main
+    <>
+      <StaffAutoRefresh />
+      <main
       style={{
         minHeight: '100vh',
         background: '#f5f7fb',
@@ -441,7 +446,7 @@ export default async function StaffPage() {
             }
           />
         </div>
-
+		  <PaymentReceiptReview />
         <section
           style={{
             background:
@@ -469,10 +474,11 @@ export default async function StaffPage() {
               filterBookings
             }
           />
-		  <PaymentReceiptReview />
+
         </section>
       </div>
-    </main>
+      </main>
+    </>
   )
 }
 

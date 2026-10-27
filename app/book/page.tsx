@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 type Court = {
@@ -31,8 +32,9 @@ function formatTime(time: string): string {
   return `${displayHour}:${minutes} ${period}`
 }
 
-
 export default function BookingPage() {
+  const router = useRouter()
+
   const [courts, setCourts] = useState<Court[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
 
@@ -141,13 +143,17 @@ const isTimeWithinOperatingHours = (
       return
     }
 
+    let active = true
+
     async function loadBookings() {
       const result = await supabase.rpc('get_booked_slots', {
         p_booking_date: selectedDate,
       })
 
+      if (!active) return
+
       if (result.error) {
-        console.error(result.error)
+        console.error('BOOKED SLOTS ERROR:', result.error)
         return
       }
 
@@ -168,7 +174,15 @@ const isTimeWithinOperatingHours = (
       setBookings(formattedBookings)
     }
 
-    loadBookings()
+    void loadBookings()
+    const intervalId = window.setInterval(() => {
+      void loadBookings()
+    }, 10000)
+
+    return () => {
+      active = false
+      window.clearInterval(intervalId)
+    }
   }, [selectedDate])
   
 
@@ -235,12 +249,14 @@ useEffect(() => {
     return 210
   }
 
-  function getEndTime(time: string) {
-    const hour = Number(time.split(':')[0])
-    const endHour = hour === 1 ? 2 : hour + 1
 
-    return String(endHour).padStart(2, '0') + ':00'
-  }
+function getEndTime(time: string) {
+  const hour = Number(time.split(':')[0])
+  const endHour = (hour + 1) % 24
+
+  return String(endHour).padStart(2, '0') + ':00'
+}
+
 
 
 function selectSlot(courtId: string, time: string) {
@@ -302,6 +318,7 @@ async function createBooking() {
   setMessage('')
   setBookingReference('')
 
+
   try {
     const response = await fetch('/api/create-booking', {
       method: 'POST',
@@ -320,28 +337,18 @@ async function createBooking() {
     const result = await response.json()
 
     if (!response.ok) {
-      setMessage(
-        typeof result?.error === 'string'
-          ? result.error
-          : 'Unable to create booking. Please try again.'
-      )
+      setMessage(result.error || 'Unable to create booking.')
       setSubmitting(false)
       return
     }
 
-    if (
-      typeof result?.paymentUrl !== 'string' ||
-      typeof result?.bookingReference !== 'string'
-    ) {
-      setMessage(
-        'The booking response was incomplete. Please contact staff before trying again.'
-      )
+    if (!result.paymentUrl || !result.bookingReference) {
+      setMessage('Booking was created, but the payment link is missing. Please contact staff.')
       setSubmitting(false)
       return
     }
 
-    setBookingReference(result.bookingReference)
-    window.location.assign(result.paymentUrl)
+    window.location.href = result.paymentUrl
     return
   } catch (error) {
     console.error('Booking submission failed:', error)
@@ -353,6 +360,7 @@ async function createBooking() {
     setSubmitting(false)
     return
   }
+
 }
 
   if (loading) {
@@ -546,7 +554,11 @@ async function createBooking() {
                         key={slot.courtId + '-' + slot.time}
                         className="flex items-center justify-between gap-3 rounded-lg bg-white p-3"
                       >
-                        <span>{courtName} · {slot.time}–{getEndTime(slot.time)}</span>
+
+<span>
+  {courtName} · {formatTime(slot.time)}–{formatTime(getEndTime(slot.time))}
+</span>
+
                         <span className="shrink-0 font-semibold">₱{getPrice(slot.time)}</span>
                       </div>
                     )
