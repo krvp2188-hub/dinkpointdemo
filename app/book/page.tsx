@@ -39,6 +39,32 @@ function formatTime(time: string): string {
   return `${displayHour}:${minutes} ${period}`
 }
 
+function getManilaDateTime() {
+  const now = new Date()
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now)
+  const getPart = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? ''
+
+  const timeParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Manila',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now)
+  const getTimePart = (type: string) =>
+    timeParts.find((part) => part.type === type)?.value ?? '00'
+
+  return {
+    date: `${getPart('year')}-${getPart('month')}-${getPart('day')}`,
+    time: `${getTimePart('hour')}:${getTimePart('minute')}`,
+  }
+}
+
 export default function BookingPage() {
   const router = useRouter()
 
@@ -50,6 +76,7 @@ export default function BookingPage() {
   const [adminMessage, setAdminMessage] = useState('')
 
   const [selectedDate, setSelectedDate] = useState('')
+  const [currentDateTime, setCurrentDateTime] = useState({ date: '', time: '' })
   const [selectedSlots, setSelectedSlots] = useState<{ courtId: string; time: string }[]>([])
 
   const [customerName, setCustomerName] = useState('')
@@ -120,12 +147,16 @@ const isTimeWithinOperatingHours = (
 }
 
   useEffect(() => {
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = String(today.getMonth() + 1).padStart(2, '0')
-    const day = String(today.getDate()).padStart(2, '0')
+    const updateManilaDateTime = () => {
+      const manilaNow = getManilaDateTime()
+      setCurrentDateTime(manilaNow)
+      setSelectedDate((current) => current || manilaNow.date)
+    }
 
-    setSelectedDate(year + '-' + month + '-' + day)
+    updateManilaDateTime()
+    const intervalId = window.setInterval(updateManilaDateTime, 30_000)
+
+    return () => window.clearInterval(intervalId)
   }, [])
 
   useEffect(() => {
@@ -573,11 +604,50 @@ async function createBooking() {
       return false
     }
 
-    return isTimeWithinOperatingHours(
+    const withinOperatingHours = isTimeWithinOperatingHours(
       time,
       operatingHours.open_time,
       operatingHours.close_time
     )
+
+    if (!withinOperatingHours) {
+      return false
+    }
+
+    // Keep the full schedule visible to staff. For players, hide today's
+    // slots that have already started, using the Asia/Manila clock.
+    if (isAdmin || selectedDate !== currentDateTime.date || !currentDateTime.time) {
+      return true
+    }
+
+    const slotMinutes =
+      Number(time.split(':')[0]) * 60 +
+      Number(time.split(':')[1])
+    const nowMinutes =
+      Number(currentDateTime.time.split(':')[0]) * 60 +
+      Number(currentDateTime.time.split(':')[1])
+    const openMinutes =
+      Number(operatingHours.open_time.split(':')[0]) * 60 +
+      Number(operatingHours.open_time.split(':')[1])
+    const closeMinutes =
+      Number(operatingHours.close_time.split(':')[0]) * 60 +
+      Number(operatingHours.close_time.split(':')[1])
+    const isOvernight = openMinutes >= closeMinutes
+
+    // In an overnight schedule, slots after midnight belong after the
+    // evening slots (e.g. 12 AM and 1 AM follow 11 PM).
+    const adjustedSlotMinutes =
+      isOvernight && slotMinutes < closeMinutes
+        ? slotMinutes + 24 * 60
+        : slotMinutes
+    const currentHourMinutes = Math.floor(nowMinutes / 60) * 60
+    const adjustedNowMinutes =
+      isOvernight && currentHourMinutes < closeMinutes
+        ? currentHourMinutes + 24 * 60
+        : currentHourMinutes
+
+    // Keep the current hourly slot visible until the next hour begins.
+    return adjustedSlotMinutes >= adjustedNowMinutes
   })
   .map(function (time) {
     const endTime = getEndTime(time)
