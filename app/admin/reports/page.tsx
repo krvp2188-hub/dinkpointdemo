@@ -12,6 +12,16 @@ type ReportsPageProps = {
   }>
 }
 
+function getBookingHours(startTime: string, endTime: string) {
+  const [startHour, startMinute] = startTime.split(':').map(Number)
+  const [endHour, endMinute] = endTime.split(':').map(Number)
+
+  let minutes = endHour * 60 + endMinute - (startHour * 60 + startMinute)
+  if (minutes < 0) minutes += 24 * 60
+
+  return minutes / 60
+}
+
 export default async function ReportsPage({
   searchParams,
 }: ReportsPageProps) {
@@ -155,11 +165,27 @@ const dailyReport = Array.from(
         0
       )
 
+    const bookedHours = dayConfirmedBookings.reduce(
+      (total, booking) =>
+        total + getBookingHours(booking.start_time, booking.end_time),
+      0
+    )
+
+    const pendingHours = dayBookings
+      .filter((booking) => booking.status === 'pending')
+      .reduce(
+        (total, booking) =>
+          total + getBookingHours(booking.start_time, booking.end_time),
+        0
+      )
+
     return {
       date: dateString,
       bookings: dayBookings.length,
       confirmed: dayConfirmedBookings.length,
       revenue: dayRevenue,
+      bookedHours,
+      pendingHours,
     }
   }
 )
@@ -176,8 +202,27 @@ const dailyReport = Array.from(
         booking.status !== 'cancelled'
     )
 
-    const courtRevenue = courtBookings
-      .filter((booking) => booking.status === 'confirmed')
+    const activeCourtBookings = courtBookings.filter(
+      (booking) =>
+        booking.status === 'confirmed' || booking.status === 'completed'
+    )
+
+    const courtBookedHours = activeCourtBookings.reduce(
+      (total, booking) =>
+        total + getBookingHours(booking.start_time, booking.end_time),
+      0
+    )
+
+    const courtPendingHours = courtBookings
+      .filter((booking) => booking.status === 'pending')
+      .reduce(
+        (total, booking) =>
+          total + getBookingHours(booking.start_time, booking.end_time),
+        0
+      )
+
+    const courtRevenue = activeCourtBookings
+      .filter((booking) => booking.payment_status === 'paid')
       .reduce(
         (total, booking) =>
           total + Number(booking.amount || 0),
@@ -187,6 +232,8 @@ const dailyReport = Array.from(
     return {
       name: court.name,
       bookings: courtBookings.length,
+      bookedHours: courtBookedHours,
+      pendingHours: courtPendingHours,
       revenue: courtRevenue,
     }
   })
@@ -257,8 +304,6 @@ const dailyReport = Array.from(
   startDate={startDate}
   endDate={endDate}
 />
-<div style={{ marginBottom: '24px' }}>
-</div>
 <div style={{ marginBottom: '24px' }}>
   <ReportCharts dailyReport={dailyReport} />
 </div>
@@ -339,6 +384,8 @@ const dailyReport = Array.from(
                   <th style={thStyle}>Date</th>
                   <th style={thStyle}>Bookings</th>
                   <th style={thStyle}>Confirmed</th>
+                  <th style={thStyle}>Booked Hours</th>
+                  <th style={thStyle}>Pending Hours</th>
                   <th style={thStyle}>Revenue</th>
                 </tr>
               </thead>
@@ -356,6 +403,14 @@ const dailyReport = Array.from(
 
                     <td style={tdStyle}>
                       {day.confirmed}
+                    </td>
+
+                    <td style={tdStyle}>
+                      {day.bookedHours.toFixed(2)} hrs
+                    </td>
+
+                    <td style={tdStyle}>
+                      {day.pendingHours.toFixed(2)} hrs
                     </td>
 
                     <td style={tdStyle}>
@@ -416,6 +471,14 @@ const dailyReport = Array.from(
 
                       <td style={tdStyle}>
                         {court.bookings}
+                      </td>
+
+                      <td style={tdStyle}>
+                        {court.bookedHours.toFixed(2)} hrs
+                      </td>
+
+                      <td style={tdStyle}>
+                        {court.pendingHours.toFixed(2)} hrs
                       </td>
 
                       <td style={tdStyle}>

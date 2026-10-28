@@ -29,6 +29,8 @@ export default function AdminNav() {
   const [readIds, setReadIds] = useState<string[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
+  const [logoutError, setLogoutError] = useState('')
   const supabase = useMemo(() => createClient(), [])
 
   const loadNotifications = useCallback(async () => {
@@ -97,6 +99,31 @@ export default function AdminNav() {
     setReadIds((current) =>
       current.includes(notificationId) ? current : [...current, notificationId]
     )
+  }
+
+  async function handleLogout() {
+    if (signingOut) return
+
+    setSigningOut(true)
+    setLogoutError('')
+
+    try {
+      const { error } = await supabase.auth.signOut()
+
+      if (error) {
+        console.error('Could not sign out:', error)
+        setLogoutError('Logout failed. Please try again.')
+        setSigningOut(false)
+        return
+      }
+
+      router.replace('/login')
+      router.refresh()
+    } catch (error) {
+      console.error('Unexpected error while signing out:', error)
+      setLogoutError('Logout failed. Please try again.')
+      setSigningOut(false)
+    }
   }
 
   const unreadCount = notifications.filter(
@@ -367,6 +394,40 @@ export default function AdminNav() {
               )}
             </div>
           )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {logoutError && (
+            <span
+              role="alert"
+              style={{
+                color: '#b91c1c',
+                fontSize: '12px',
+                maxWidth: '180px',
+              }}
+            >
+              {logoutError}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            disabled={signingOut}
+            style={{
+              border: '1px solid #fecaca',
+              borderRadius: '10px',
+              background: signingOut ? '#fef2f2' : 'white',
+              color: '#b91c1c',
+              padding: '10px 12px',
+              cursor: signingOut ? 'wait' : 'pointer',
+              fontSize: '14px',
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+              opacity: signingOut ? 0.7 : 1,
+            }}
+          >
+            {signingOut ? 'Logging out…' : '🚪 Logout'}
+          </button>
         </div>
       </div>
     </nav>

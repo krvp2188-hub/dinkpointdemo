@@ -18,6 +18,13 @@ type Booking = {
   status: string
 }
 
+type SlotOverride = {
+  court_id: string
+  booking_date: string
+  start_time: string
+  status: 'pending' | 'booked'
+}
+
 function formatTime(time: string): string {
   const [hours, minutes = '00'] = time.split(':')
   const hour = Number(hours)
@@ -37,6 +44,10 @@ export default function BookingPage() {
 
   const [courts, setCourts] = useState<Court[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [slotOverrides, setSlotOverrides] = useState<SlotOverride[]>([])
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [adminSaving, setAdminSaving] = useState<string | null>(null)
+  const [adminMessage, setAdminMessage] = useState('')
 
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedSlots, setSelectedSlots] = useState<{ courtId: string; time: string }[]>([])
@@ -118,6 +129,22 @@ const isTimeWithinOperatingHours = (
   }, [])
 
   useEffect(() => {
+    let active = true
+    fetch('/api/admin/court-availability', { cache: 'no-store' })
+      .then(async (response) => {
+        if (!active) return
+        if (response.ok) {
+          const result = await response.json()
+          setIsAdmin(Boolean(result.isAdmin))
+        }
+      })
+      .catch(() => {
+        if (active) setIsAdmin(false)
+      })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
     async function loadCourts() {
       const result = await supabase
         .from('courts')
@@ -146,7 +173,7 @@ const isTimeWithinOperatingHours = (
     let active = true
 
     async function loadBookings() {
-      const result = await supabase.rpc('get_booked_slots', {
+      const result = await supabase.rpc('get_booked_slots_with_status', {
         p_booking_date: selectedDate,
       })
 
@@ -167,7 +194,7 @@ const isTimeWithinOperatingHours = (
         return {
           court_id: booking.court_id,
           start_time: booking.start_time,
-          status: 'confirmed',
+          status: booking.status || 'confirmed',
         }
       })
 
@@ -185,6 +212,34 @@ const isTimeWithinOperatingHours = (
     }
   }, [selectedDate])
   
+
+useEffect(() => {
+  if (!selectedDate) return
+
+  let active = true
+  async function loadSlotOverrides() {
+    try {
+      const response = await fetch(
+        `/api/court-availability?date=${encodeURIComponent(selectedDate)}`,
+        { cache: 'no-store' }
+      )
+      const result = await response.json()
+      if (active && response.ok) {
+        setSlotOverrides(Array.isArray(result.overrides) ? result.overrides : [])
+      }
+    } catch (error) {
+      console.error('Could not load court availability overrides:', error)
+    }
+  }
+
+  void loadSlotOverrides()
+  const intervalId = window.setInterval(() => void loadSlotOverrides(), 10000)
+  return () => {
+    active = false
+    window.clearInterval(intervalId)
+  }
+}, [selectedDate])
+
 
 useEffect(() => {
   if (!selectedDate) {
@@ -227,14 +282,57 @@ useEffect(() => {
 }, [selectedDate])
 
 
+  function getSlotOverride(courtId: string, time: string) {
+    return slotOverrides.find(
+      (override) => override.court_id === courtId &&
+        override.booking_date === selectedDate &&
+        override.start_time.startsWith(time)
+    )
+  }
+
   function isBooked(courtId: string, time: string) {
+    const override = getSlotOverride(courtId, time)
+    if (override && ['pending', 'booked'].includes(override.status)) return true
+
     return bookings.some(function (booking) {
       return (
         booking.court_id === courtId &&
         booking.start_time.startsWith(time) &&
-        ['pending', 'confirmed'].includes(booking.status)
+        ['pending', 'confirmed', 'completed'].includes(booking.status)
       )
     })
+  }
+
+  async function setAdminSlotStatus(courtId: string, time: string, status: 'available' | 'pending' | 'booked') {
+    const key = `${courtId}-${selectedDate}-${time}`
+    setAdminSaving(key)
+    setAdminMessage('')
+    try {
+      const response = await fetch('/api/admin/court-availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courtId, date: selectedDate, time, status }),
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        setAdminMessage(result.error || 'Could not update court availability.')
+        return
+      }
+
+      const refresh = await fetch(
+        `/api/court-availability?date=${encodeURIComponent(selectedDate)}`,
+        { cache: 'no-store' }
+      )
+      const refreshResult = await refresh.json()
+      if (refresh.ok) setSlotOverrides(Array.isArray(refreshResult.overrides) ? refreshResult.overrides : [])
+      setSelectedSlots((current) => current.filter((slot) => !(slot.courtId === courtId && slot.time === time)))
+      setAdminMessage(`${courts.find((court) => court.id === courtId)?.name ?? 'Court'} at ${formatTime(time)} set to ${status}.`)
+    } catch (error) {
+      console.error(error)
+      setAdminMessage('Network error while updating court availability.')
+    } finally {
+      setAdminSaving(null)
+    }
   }
 
   function getPrice(time: string) {
@@ -431,6 +529,17 @@ async function createBooking() {
           />
         </div>
 
+        {isAdmin && (
+          <section className="mb-6 rounded-2xl border border-[#D6E3A6] bg-[#EEF5D8] p-5">
+            <h2 className="text-lg font-extrabold text-[#263F34]">Admin court availability</h2>
+            <p className="mt-1 text-sm text-[#53635A]">
+              Choose a date above, then use the buttons in each court/time cell to set it Available, Pending, or Booked.
+              Existing customer bookings are protected and cannot be overwritten here.
+            </p>
+            {adminMessage && <p role="status" className="mt-3 rounded-lg bg-white p-3 text-sm font-semibold">{adminMessage}</p>}
+          </section>
+        )}
+
         <div className="overflow-x-auto rounded-2xl border border-[#E5EAE3] bg-white shadow-sm">
           <table className="w-full min-w-[900px] border-collapse">
             <thead>
@@ -484,38 +593,79 @@ async function createBooking() {
 
         {courts.map(function (court) {
           const booked = isBooked(court.id, time)
-
+          const override = getSlotOverride(court.id, time)
           const selected = selectedSlots.some(
             (slot) => slot.courtId === court.id && slot.time === time
           )
-
           const price = getPrice(time)
+          const actualBooking = bookings.some((booking) =>
+            booking.court_id === court.id &&
+            booking.start_time.startsWith(time) &&
+            ['pending', 'confirmed', 'completed'].includes(booking.status)
+          )
+          const actualBookingStatus = bookings.find((booking) =>
+            booking.court_id === court.id &&
+            booking.start_time.startsWith(time) &&
+            ['pending', 'confirmed', 'completed'].includes(booking.status)
+          )?.status
+          const statusLabel = actualBookingStatus === 'pending'
+            ? 'Pending'
+            : actualBooking
+              ? 'Booked'
+              : override?.status === 'pending'
+                ? 'Pending'
+                : override?.status === 'booked'
+                  ? 'Booked'
+                  : '₱' + price
 
           return (
-            <td
-              key={court.id}
-              className="p-2 text-center"
-            >
-              <button
-                type="button"
-                disabled={booked}
-                onClick={function () {
-                  selectSlot(court.id, time)
-                }}
-                className={
-                  booked
-                    ? 'w-full cursor-not-allowed rounded-xl bg-[#E5EAE5] px-3 py-3 text-sm font-semibold text-[#66736C]'
-                    : selected
-                    ? 'w-full rounded-xl bg-[#9676A5] px-3 py-3 text-sm font-bold text-white transition hover:bg-[#79558C]'
-                    : 'w-full rounded-xl bg-[#F1EAF5] px-3 py-3 text-sm font-bold text-[#79558C] transition hover:bg-[#E5D9EC]'
-                }
-              >
-                {booked
-                  ? 'Booked'
-                  : selected
-                  ? '✓ Selected'
-                  : '₱' + price}
-              </button>
+            <td key={court.id} className="p-2 text-center">
+              {isAdmin ? (
+                <div className="min-w-[130px] space-y-1">
+                  <div className={`rounded-lg px-2 py-2 text-xs font-bold ${
+                    actualBooking ? 'bg-red-100 text-red-800'
+                    : override?.status === 'pending' ? 'bg-amber-100 text-amber-800'
+                    : override?.status === 'booked' ? 'bg-red-100 text-red-800'
+                    : 'bg-green-100 text-green-800'
+                  }`}>
+                    {actualBooking ? 'Existing booking' : override?.status ?? 'Available'}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {(['available', 'pending', 'booked'] as const).map((status) => (
+                      <button
+                        key={status}
+                        type="button"
+                        disabled={adminSaving === `${court.id}-${selectedDate}-${time}` || (actualBooking && status !== 'available')}
+                        onClick={() => void setAdminSlotStatus(court.id, time, status)}
+                        className={`rounded-md px-1 py-2 text-[10px] font-bold capitalize disabled:cursor-not-allowed disabled:opacity-40 ${
+                          status === 'available' ? 'bg-green-100 text-green-800'
+                          : status === 'pending' ? 'bg-amber-100 text-amber-800'
+                          : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {adminSaving === `${court.id}-${selectedDate}-${time}` ? 'Saving…' : status}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={booked}
+                  onClick={() => selectSlot(court.id, time)}
+                  className={
+                    booked && statusLabel === 'Pending'
+                      ? 'w-full cursor-not-allowed rounded-xl bg-green-100 px-3 py-3 text-sm font-semibold text-green-800 border border-green-300'
+                      : booked
+                      ? 'w-full cursor-not-allowed rounded-xl bg-red-100 px-3 py-3 text-sm font-semibold text-red-800 border border-red-300'
+                      : selected
+                      ? 'w-full rounded-xl bg-[#9676A5] px-3 py-3 text-sm font-bold text-white transition hover:bg-[#79558C]'
+                      : 'w-full rounded-xl bg-[#F1EAF5] px-3 py-3 text-sm font-bold text-[#79558C] transition hover:bg-[#E5D9EC]'
+                  }
+                >
+                  {booked ? statusLabel : selected ? '✓ Selected' : statusLabel}
+                </button>
+              )}
             </td>
           )
         })}
