@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     const { data: authorization, error: authError } =
       await supabaseAdmin
         .from('guest_payment_authorizations')
-        .select('booking_reference, token_hash, expires_at, revoked_at')
+        .select('booking_reference, token_hash, revoked_at')
         .eq('booking_reference', reference)
         .maybeSingle()
 
@@ -85,7 +85,6 @@ export async function POST(request: Request) {
 
     if (
       authorization.revoked_at ||
-      new Date(authorization.expires_at).getTime() <= Date.now() ||
       !safeEqualHex(authorization.token_hash, tokenHash)
     ) {
       return NextResponse.json(
@@ -152,7 +151,6 @@ export async function POST(request: Request) {
         : allCancelled
           ? 'cancelled'
           : 'unpaid',
-      expiresAt: authorization.expires_at,
     })
   } catch {
     return NextResponse.json(

@@ -18,96 +18,6 @@ function isString(value: unknown): value is string {
 }
 
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-function formatTime(value: string): string {
-  const [hourPart, minutePart = '00'] = value.split(':')
-  const hour = Number(hourPart)
-  if (!Number.isInteger(hour) || hour < 0 || hour > 23) return value
-  return `${hour % 12 || 12}:${minutePart} ${hour >= 12 ? 'PM' : 'AM'}`
-}
-
-function formatBookingDate(value: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
-  if (!match) return value
-  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
-  return new Intl.DateTimeFormat('en-PH', {
-    timeZone: 'Asia/Manila', year: 'numeric', month: 'long', day: 'numeric',
-  }).format(date)
-}
-
-function peso(value: number): string {
-  return `₱${value.toLocaleString('en-PH', { maximumFractionDigits: 2 })}`
-}
-
-async function sendBookingConfirmationEmail(args: {
-  to: string
-  customerName: string
-  bookingReference: string
-  bookingDate: string
-  slots: { courtName: string; startTime: string; endTime: string; amount: number; paymentStatus: string }[]
-  totalAmount: number
-  amountPaid: number
-  paymentUrl: string
-}): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY
-  const from = process.env.RESEND_FROM_EMAIL
-  if (!apiKey || !from) {
-    console.error('Booking email skipped: RESEND_API_KEY or RESEND_FROM_EMAIL is not configured.')
-    return false
-  }
-
-  const rows = args.slots.map((slot) => `
-    <tr>
-      <td style="padding:12px;border-bottom:1px solid #e5e7eb">${escapeHtml(slot.courtName)}</td>
-      <td style="padding:12px;border-bottom:1px solid #e5e7eb">${escapeHtml(formatTime(slot.startTime))} – ${escapeHtml(formatTime(slot.endTime))}</td>
-      <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right">${escapeHtml(peso(slot.amount))}</td>
-    </tr>`).join('')
-  const paymentStatus = args.amountPaid >= args.totalAmount && args.totalAmount > 0
-    ? 'Paid'
-    : args.amountPaid > 0
-      ? 'Partially paid'
-      : 'Unpaid — payment has not yet been confirmed'
-  const textSlots = args.slots.map((slot) =>
-    `• ${slot.courtName}: ${formatTime(slot.startTime)} – ${formatTime(slot.endTime)} (${peso(slot.amount)})`
-  ).join('\n')
-
-  const html = `<!doctype html><html><body style="margin:0;background:#f7f8f5;font-family:Arial,Helvetica,sans-serif;color:#263f34">
-    <div style="max-width:640px;margin:24px auto;background:#ffffff;border:1px solid #e5eae3;border-radius:16px;overflow:hidden">
-      <div style="background:#263f34;padding:28px 32px;color:#ffffff"><p style="margin:0;color:#d6e3a6;font-size:12px;font-weight:bold;letter-spacing:2px">DINK POINT PICKLEBALL</p><h1 style="margin:12px 0 0;font-size:26px">Booking confirmation</h1></div>
-      <div style="padding:28px 32px"><p>Hi ${escapeHtml(args.customerName)},</p><p>Thanks for booking with Dink Point Pickleball. Please keep this email for your records.</p>
-        <div style="background:#f2f4ef;border-radius:12px;padding:16px 18px;margin:20px 0"><p style="margin:0 0 6px;color:#53635a;font-size:12px;font-weight:bold;text-transform:uppercase">Booking reference</p><p style="margin:0;font-size:22px;font-weight:bold;letter-spacing:1px">${escapeHtml(args.bookingReference)}</p></div>
-        <p><strong>Booking date:</strong> ${escapeHtml(formatBookingDate(args.bookingDate))}</p>
-        <h2 style="font-size:17px;margin:24px 0 10px">Court and time details</h2>
-        <table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:#f7f8f5;text-align:left"><th style="padding:12px">Court</th><th style="padding:12px">Time</th><th style="padding:12px;text-align:right">Amount</th></tr></thead><tbody>${rows}</tbody></table>
-        <div style="margin:20px 0;padding:16px;border:1px solid #e5eae3;border-radius:12px"><p style="margin:0 0 8px"><strong>Total booking amount:</strong> ${escapeHtml(peso(args.totalAmount))}</p><p style="margin:0 0 8px"><strong>Amount paid:</strong> ${escapeHtml(peso(args.amountPaid))}</p><p style="margin:0"><strong>Payment status:</strong> ${escapeHtml(paymentStatus)}</p></div>
-        <p style="margin:24px 0"><a href="${escapeHtml(args.paymentUrl)}" style="display:inline-block;background:#d6e3a6;color:#263f34;text-decoration:none;font-weight:bold;padding:13px 18px;border-radius:10px">View booking / payment details</a></p>
-        <h2 style="font-size:17px;margin:24px 0 8px">Before you play</h2><ul style="padding-left:20px;line-height:1.7"><li>Please arrive a few minutes before your booked time.</li><li>Keep your booking reference ready in case staff needs to verify your reservation.</li></ul>
-        <h2 style="font-size:17px;margin:24px 0 8px">Need to cancel or reschedule?</h2><p style="line-height:1.6">Please contact the Dink Point Pickleball team before your scheduled session and provide your booking reference <strong>${escapeHtml(args.bookingReference)}</strong>. Rescheduling depends on court availability, and any cancellation or refund is subject to the venue's applicable policy. Please do not assume a booking is cancelled until the team confirms it.</p>
-        <p style="margin-top:28px;line-height:1.6">Thank you,<br><strong>Dink Point Pickleball</strong></p>
-      </div></div></body></html>`
-
-  const textBody = `DINK POINT PICKLEBALL — BOOKING CONFIRMATION\n\nHi ${args.customerName},\n\nBooking reference: ${args.bookingReference}\nBooking date: ${formatBookingDate(args.bookingDate)}\n\nCOURTS AND TIMES\n${textSlots}\n\nTotal booking amount: ${peso(args.totalAmount)}\nAmount paid: ${peso(args.amountPaid)}\nPayment status: ${paymentStatus}\n\nView booking / payment details: ${args.paymentUrl}\n\nBefore you play: Please arrive a few minutes early and keep your booking reference ready.\n\nTo cancel or reschedule, contact the Dink Point Pickleball team before your session and provide your booking reference. Rescheduling depends on availability; cancellation/refund is subject to the venue's applicable policy. Do not assume the booking is cancelled until the team confirms it.\n\nThank you,\nDink Point Pickleball`
-
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from, to: [args.to], subject: `Dink Point Pickleball booking confirmation — ${args.bookingReference}`, html, text: textBody }),
-  })
-  if (!response.ok) {
-    console.error('Booking confirmation email failed:', response.status, await response.text())
-    return false
-  }
-  return true
-}
-
 export async function POST(request: Request) {
   try {
     const forwardedFor = request.headers.get('x-forwarded-for')
@@ -271,7 +181,7 @@ export async function POST(request: Request) {
     const tokenHash = createHash('sha256')
       .update(guestToken)
       .digest('hex')
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
+
 
     const { data, error } = await supabaseAdmin.rpc(
       'create_secure_guest_booking',
@@ -284,7 +194,7 @@ export async function POST(request: Request) {
         p_booking_date: bookingDate,
         p_start_times: startTimes,
         p_token_hash: tokenHash,
-        p_expires_at: expiresAt,
+        p_expires_at: null,
       }
     )
 
@@ -308,96 +218,18 @@ export async function POST(request: Request) {
       `#token=${encodeURIComponent(guestToken)}`
 
     const bookings = Array.isArray(data) ? data : []
-    const rpcTotalAmount = bookings.reduce((sum, row) => {
+    const totalAmount = bookings.reduce((sum, row) => {
       const amount = Number(row.amount)
       return sum + (Number.isFinite(amount) ? amount : 0)
     }, 0)
 
-    // Fetch the persisted booking rows so the confirmation email uses actual
-    // court names, slot times, amounts, and payment status from the database.
-    const { data: savedBookings, error: savedBookingsError } = await supabaseAdmin
-      .from('bookings')
-      .select('booking_reference, booking_date, court_id, start_time, end_time, amount, status, payment_status')
-      .eq('booking_reference', bookingReference)
-      .order('start_time', { ascending: true })
-
-    let totalAmount = rpcTotalAmount
-    let amountPaid = 0
-    let emailSlots: { courtName: string; startTime: string; endTime: string; amount: number; paymentStatus: string }[] = []
-
-    if (savedBookingsError) {
-      console.error('Could not load saved booking details for email:', savedBookingsError.message)
-    } else if (savedBookings && savedBookings.length > 0) {
-      const savedCourtIds = [...new Set(savedBookings.map((booking) => booking.court_id))]
-      const { data: savedCourts, error: savedCourtsError } = await supabaseAdmin
-        .from('courts')
-        .select('id, name')
-        .in('id', savedCourtIds)
-
-      if (savedCourtsError) {
-        console.error('Could not load court names for booking email:', savedCourtsError.message)
-      }
-      const courtNameById = new Map((savedCourts ?? []).map((court) => [court.id, court.name]))
-      emailSlots = savedBookings.map((booking) => {
-        const amount = Number(booking.amount)
-        const safeAmount = Number.isFinite(amount) ? amount : 0
-        const paymentStatus = String(booking.payment_status ?? 'unpaid').toLowerCase()
-        if (paymentStatus === 'paid') amountPaid += safeAmount
-        return {
-          courtName: courtNameById.get(booking.court_id) ?? 'Court',
-          startTime: String(booking.start_time).slice(0, 5),
-          endTime: String(booking.end_time).slice(0, 5),
-          amount: safeAmount,
-          paymentStatus,
-        }
-      })
-      totalAmount = emailSlots.reduce((sum, slot) => sum + slot.amount, 0)
-    } else {
-      // Fallback if the database read is briefly unavailable after the booking RPC.
-      const { data: fallbackCourts } = await supabaseAdmin
-        .from('courts')
-        .select('id, name')
-        .in('id', courtIds)
-      const courtNameById = new Map((fallbackCourts ?? []).map((court) => [court.id, court.name]))
-      emailSlots = selectedSlots.map((slot: { courtId: string; time: string }, index: number) => {
-        const startHour = Number(slot.time.split(':')[0])
-        const endHour = startHour === 23 ? 0 : startHour + 1
-        const endTime = `${String(endHour).padStart(2, '0')}:00`
-        const amount = Number(bookings[index]?.amount ?? 0)
-        return {
-          courtName: courtNameById.get(slot.courtId) ?? 'Court',
-          startTime: slot.time,
-          endTime,
-          amount: Number.isFinite(amount) ? amount : 0,
-          paymentStatus: 'unpaid',
-        }
-      })
-      totalAmount = emailSlots.reduce((sum, slot) => sum + slot.amount, 0) || rpcTotalAmount
-    }
-
-    // Email failure must not undo a successful booking or prevent the payment page opening.
-    let confirmationEmailSent = false
-    try {
-      confirmationEmailSent = await sendBookingConfirmationEmail({
-        to: customerEmail,
-        customerName,
-        bookingReference,
-        bookingDate,
-        slots: emailSlots,
-        totalAmount,
-        amountPaid,
-        paymentUrl,
-      })
-    } catch (emailError) {
-      console.error('Unexpected booking confirmation email error:', emailError)
-    }
+    // Confirmation emails are intentionally NOT sent when a booking is created.
+    // The email will be sent only after staff approves the customer's payment receipt.
 
     return NextResponse.json({
       bookingReference,
       paymentUrl,
       totalAmount,
-      expiresAt,
-      confirmationEmailSent,
     })
   } catch {
     return NextResponse.json(

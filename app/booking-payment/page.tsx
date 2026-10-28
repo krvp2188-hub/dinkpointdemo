@@ -16,7 +16,6 @@ type PaymentSession = {
     status: string
   }[]
   paymentStatus: 'paid' | 'cancelled' | 'unpaid'
-  expiresAt: string
 }
 
 function formatTime(time: string): string {
@@ -45,7 +44,6 @@ export default function BookingPaymentPage() {
   const [receipt, setReceipt] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
-  const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
     const urlToken = window.location.hash.startsWith('#token=')
@@ -107,31 +105,6 @@ export default function BookingPaymentPage() {
 
     void loadSession()
   }, [])
-
-  useEffect(() => {
-    if (!session || session.paymentStatus !== 'unpaid') return
-
-    const intervalId = window.setInterval(() => setNow(Date.now()), 1000)
-
-    return () => window.clearInterval(intervalId)
-  }, [session?.paymentStatus])
-
-  const secondsRemaining = session?.expiresAt
-    ? Math.max(
-        0,
-        Math.ceil((new Date(session.expiresAt).getTime() - now) / 1000)
-      )
-    : 0
-
-  const paymentExpired = Boolean(
-    session &&
-      session.paymentStatus === 'unpaid' &&
-      secondsRemaining <= 0
-  )
-
-  const countdownText = `${String(
-    Math.floor(secondsRemaining / 60)
-  ).padStart(2, '0')}:${String(secondsRemaining % 60).padStart(2, '0')}`
 
   useEffect(() => {
     if (!session || session.paymentStatus !== 'unpaid' || !token) {
@@ -204,13 +177,6 @@ export default function BookingPaymentPage() {
 
     if (!session || !token || !receipt) {
       setMessage('Please select a receipt image.')
-      return
-    }
-
-    if (paymentExpired) {
-      setMessage(
-        'Your 15-minute payment window has expired. Please make a new booking.'
-      )
       return
     }
 
@@ -291,28 +257,10 @@ export default function BookingPaymentPage() {
       <h1 className="text-3xl font-bold">Complete Your Booking</h1>
 
       {session.paymentStatus === 'unpaid' && (
-        <section
-          className={`mt-4 rounded-xl border p-4 ${
-            paymentExpired
-              ? 'border-red-300 bg-red-50'
-              : 'border-amber-300 bg-amber-50'
-          }`}
-          aria-live="polite"
-        >
-          <p className="text-sm font-semibold">
-            Time left to complete payment
-          </p>
-          <p
-            className={`mt-1 text-3xl font-bold tabular-nums ${
-              paymentExpired ? 'text-red-700' : 'text-amber-900'
-            }`}
-          >
-            {countdownText}
-          </p>
-          <p className="mt-1 text-sm">
-            {paymentExpired
-              ? 'Your payment window has expired. Please make a new booking.'
-              : 'Please pay and submit your GCash receipt before the timer reaches zero.'}
+        <section className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4">
+          <p className="text-sm">
+            Your booking is pending until staff reviews your GCash payment receipt.
+            Please submit your receipt after payment and wait for confirmation.
           </p>
         </section>
       )}
@@ -500,14 +448,10 @@ export default function BookingPaymentPage() {
 
             <button
               type="submit"
-              disabled={submitting || paymentExpired}
+              disabled={submitting}
               className="w-full rounded-lg bg-green-700 px-4 py-3 font-semibold text-white disabled:opacity-50"
             >
-              {paymentExpired
-                ? 'Payment Window Expired'
-                : submitting
-                  ? 'Submitting...'
-                  : 'Submit Receipt'}
+              {submitting ? 'Submitting...' : 'Submit Receipt'}
             </button>
 
             {message && (
