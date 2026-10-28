@@ -48,10 +48,10 @@ export default async function Home() {
       {/* Navigation */}
       <header className="sticky top-0 z-30 border-b border-[#E8EAE5] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
-          <Link href="/" aria-label="Drink Point home">
+          <Link href="/" aria-label="Dink Point  home">
             <img
               src="/images/drink-point-logo.png"
-              alt="Drink Point"
+              alt="Dink Point "
               className="h-12 w-auto max-w-[150px] object-contain sm:h-14"
             />
           </Link>
@@ -97,7 +97,7 @@ export default async function Home() {
         <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-2 lg:gap-12 lg:py-20">
           <div className="relative z-10">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-[#9676A5] sm:text-sm">
-              Drink Point Pickleball
+              Dink Point  Pickleball
             </p>
 
             <h1 className="mt-4 max-w-xl text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
@@ -406,7 +406,7 @@ export default async function Home() {
               Visit our courts
             </h2>
             <p className="mt-4 max-w-lg leading-7 text-[#66736C]">
-              Come enjoy a game with friends at Drink Point. Check back for
+              Come enjoy a game with friends at Dink Point . Check back for
               our confirmed venue location and directions.
             </p>
 
@@ -415,7 +415,7 @@ export default async function Home() {
                 ⌖
               </span>
               <div>
-                <p className="font-bold">Drink Point Pickleball</p>
+                <p className="font-bold">Dink Point  Pickleball</p>
                 <p className="mt-1 text-sm leading-6 text-[#66736C]">
                   Prk. 4-B. Barangay Salvacion, Panabo City. In front of Fortune Philippine College of Trades and Technology Inc. 
                 </p>
@@ -427,7 +427,7 @@ export default async function Home() {
 <div className="relative min-h-[280px] overflow-hidden rounded-3xl border border-[#E5EAE3] bg-white">
 
 <iframe
-  title="Drink Point Pickleball location"
+  title="Dink Point  Pickleball location"
   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d989.32753055325!2d125.68566776961185!3d7.319018399543074!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32f9450032822f6d%3A0xbc4472bc2a99bb03!2sDink%20Point%20-%20Panabo!5e0!3m2!1sen!2sph!4v1793130182431!5m2!1sen!2sph"
   width="100%"
   height="320"
@@ -462,7 +462,7 @@ export default async function Home() {
           <div>
             <img
               src="/images/drink-point-logo.png"
-              alt="Drink Point"
+              alt="Dink Point "
               className="h-16 w-auto max-w-[170px] object-contain"
             />
             <h2 className="mt-3 text-2xl font-black text-white sm:text-3xl">
@@ -486,7 +486,7 @@ export default async function Home() {
       <footer className="border-t border-[#E5EAE3] bg-white">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-5 py-6 text-center sm:px-8 md:flex-row md:text-left">
           <p className="text-xs text-[#66736C]">
-            © {new Date().getFullYear()} Drink Point. All rights reserved.
+            © {new Date().getFullYear()} Dink Point . All rights reserved.
           </p>
 
           <nav className="flex flex-wrap items-center justify-center gap-5 text-xs font-semibold text-[#66736C]">

@@ -367,7 +367,7 @@ async function createBooking() {
     return (
       <main className="min-h-screen bg-[#F7F8F5] p-8 text-[#263F34]">
         <div className="mx-auto max-w-7xl rounded-2xl border border-[#E5EAE3] bg-white p-8 shadow-sm">
-          <p className="font-semibold">Loading Drink Point courts...</p>
+          <p className="font-semibold">Loading Dink Point  courts...</p>
         </div>
       </main>
     )
@@ -377,10 +377,10 @@ async function createBooking() {
     <main className="min-h-screen bg-[#F7F8F5] text-[#263F34]">
       <header className="sticky top-0 z-30 border-b border-[#E5EAE3] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
-          <a href="/" aria-label="Drink Point home" className="shrink-0">
+          <a href="/" aria-label="Dink Point  home" className="shrink-0">
             <img
               src="/images/drink-point-logo.png"
-              alt="Drink Point"
+              alt="Dink Point "
               className="h-12 w-auto max-w-[150px] object-contain sm:h-14"
             />
           </a>
@@ -402,7 +402,7 @@ async function createBooking() {
       <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10">
         <div className="mb-8 overflow-hidden rounded-3xl bg-[#263F34] px-6 py-8 text-white shadow-sm sm:px-9 sm:py-10">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-[#D6E3A6]">
-            Drink Point Pickleball
+            Dink Point  Pickleball
           </p>
           <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
             Book your next game
@@ -667,7 +667,7 @@ async function createBooking() {
 
       <footer className="border-t border-[#E5EAE3] bg-white">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-5 py-6 text-center text-xs text-[#66736C] sm:px-8 md:flex-row">
-          <span>© {new Date().getFullYear()} Drink Point. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} Dink Point . All rights reserved.</span>
           <a href="/" className="font-semibold text-[#9676A5] transition hover:text-[#79558C]">
             Back to home →
           </a>

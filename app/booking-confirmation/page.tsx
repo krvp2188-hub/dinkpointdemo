@@ -162,7 +162,7 @@ function ConfirmationContent() {
               Scan this QR code using GCash and pay the exact total shown above. Confirm the recipient name in GCash before sending.
             </p>
             <div className="mt-4 flex justify-center rounded-xl bg-white p-4">
-              <img src="/images/QR.png" alt="Drink Point GCash QR code" className="max-h-80 w-auto object-contain" />
+              <img src="/images/QR.png" alt="Dink Point  GCash QR code" className="max-h-80 w-auto object-contain" />
             </div>
 
             {success ? (
