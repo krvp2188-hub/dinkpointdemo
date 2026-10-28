@@ -79,9 +79,9 @@ const reportBookings = allBookings.filter(
     booking.booking_date <= endDate
 )
 
-  const confirmedBookings = reportBookings.filter(
-    (booking) => booking.status === 'confirmed'
-  )
+const confirmedBookings = reportBookings.filter(
+  booking => booking.status === 'confirmed' || booking.status === 'completed'
+)
 
   const pendingBookings = reportBookings.filter(
     (booking) => booking.status === 'pending'
@@ -97,13 +97,13 @@ const reportBookings = allBookings.filter(
     0
   )
 
-  const paidRevenue = confirmedBookings
-    .filter((booking) => booking.payment_status === 'paid')
-    .reduce(
-      (total, booking) =>
-        total + Number(booking.amount || 0),
-      0
-    )
+const paidRevenue = reportBookings
+  .filter(
+    booking =>
+      (booking.status === 'confirmed' || booking.status === 'completed') &&
+      booking.payment_status === 'paid'
+  )
+  .reduce((total, booking) => total + Number(booking.amount || 0), 0)
 
   const unpaidRevenue = confirmedBookings
     .filter((booking) => booking.payment_status === 'unpaid')
@@ -113,43 +113,45 @@ const reportBookings = allBookings.filter(
       0
     )
 
-const reportStart = new Date(`${startDate}T00:00:00`)
-const reportEnd = new Date(`${endDate}T00:00:00`)
+const getDateString = (date: Date) => {
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
-const dayCount =
-  Math.floor(
-    (reportEnd.getTime() - reportStart.getTime()) /
-      (1000 * 60 * 60 * 24)
-  ) + 1
+const toUtcDate = (dateString: string) => {
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day))
+}
+
+const reportStart = toUtcDate(startDate)
+const reportEnd = toUtcDate(endDate)
+
+const dayCount = Math.round(
+  (reportEnd.getTime() - reportStart.getTime()) / (24 * 60 * 60 * 1000)
+) + 1
 
 const dailyReport = Array.from(
   { length: Math.max(dayCount, 0) },
   (_, index) => {
     const date = new Date(reportStart)
+    date.setUTCDate(reportStart.getUTCDate() + index)
 
-    date.setDate(
-      reportStart.getDate() + index
-    )
-
-    const dateString = date
-      .toISOString()
-      .split('T')[0]
-
+    const dateString = getDateString(date)
     const dayBookings = reportBookings.filter(
-      (booking) =>
-        booking.booking_date === dateString
+      booking => booking.booking_date === dateString
     )
 
-    const dayConfirmedBookings =
-      dayBookings.filter(
-        (booking) =>
-          booking.status === 'confirmed'
-      )
+    const dayConfirmedBookings = dayBookings.filter(
+      booking =>
+        booking.status === 'confirmed' || booking.status === 'completed'
+    )
 
-    const dayRevenue =
-      dayConfirmedBookings.reduce(
-        (total, booking) =>
-          total + Number(booking.amount || 0),
+    const dayRevenue = dayConfirmedBookings
+      .filter(booking => booking.payment_status === 'paid')
+      .reduce(
+        (total, booking) => total + Number(booking.amount || 0),
         0
       )
 
@@ -255,8 +257,11 @@ const dailyReport = Array.from(
   startDate={startDate}
   endDate={endDate}
 />
-
-<ReportCharts dailyReport={dailyReport} />
+<div style={{ marginBottom: '24px' }}>
+</div>
+<div style={{ marginBottom: '24px' }}>
+  <ReportCharts dailyReport={dailyReport} />
+</div>
 
         <div
           style={{

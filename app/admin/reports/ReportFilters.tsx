@@ -1,206 +1,122 @@
-'use client'
+ 'use client'
 
 type Props = {
   startDate: string
   endDate: string
 }
 
-export default function ReportFilters({
-  startDate,
-  endDate,
-}: Props) {
-  const updateDateRange = (
-    start: string,
-    end: string
-  ) => {
-    const params = new URLSearchParams()
+function getSingaporeDateString(date: Date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Singapore',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
 
+  const year = parts.find((part) => part.type === 'year')?.value
+  const month = parts.find((part) => part.type === 'month')?.value
+  const day = parts.find((part) => part.type === 'day')?.value
+
+  return `${year}-${month}-${day}`
+}
+
+function addDays(dateString: string, days: number) {
+  const [year, month, day] = dateString.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day + days))
+
+  const y = date.getUTCFullYear()
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(date.getUTCDate()).padStart(2, '0')
+
+  return `${y}-${m}-${d}`
+}
+
+export default function ReportFilters({ startDate, endDate }: Props) {
+  const todayString = getSingaporeDateString()
+  const sevenDaysAgo = addDays(todayString, -6)
+  const thirtyDaysAgo = addDays(todayString, -29)
+  const firstDayOfMonth = `${todayString.slice(0, 7)}-01`
+
+  const updateDateRange = (start: string, end: string) => {
+    if (!start || !end || start > end) return
+
+    const params = new URLSearchParams()
     params.set('start', start)
     params.set('end', end)
 
-    window.location.href =
-      `/admin/reports?${params.toString()}`
+    window.location.href = `/admin/reports?${params.toString()}`
   }
 
-  const formatDate = (date: Date) =>
-    date.toISOString().split('T')[0]
-
-  const today = new Date()
-
-  const todayString = formatDate(today)
-
-  const sevenDaysAgo = new Date(today)
-  sevenDaysAgo.setDate(today.getDate() - 6)
-
-  const thirtyDaysAgo = new Date(today)
-  thirtyDaysAgo.setDate(today.getDate() - 29)
-
-  const firstDayOfMonth = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    1
-  )
-
   return (
-    <div
-      style={{
-        background: 'white',
-        borderRadius: '12px',
-        padding: '20px',
-        marginBottom: '24px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-      }}
-    >
-      <h2
-        style={{
-          marginTop: 0,
-          marginBottom: '16px',
-        }}
-      >
-        Report Period
-      </h2>
-
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '8px',
-          marginBottom: '20px',
-        }}
-      >
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={() =>
-            updateDateRange(
-              todayString,
-              todayString
-            )
-          }
-          style={quickButtonStyle}
+          onClick={() => updateDateRange(todayString, todayString)}
+          className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-100"
         >
           Today
         </button>
 
         <button
           type="button"
-          onClick={() =>
-            updateDateRange(
-              formatDate(sevenDaysAgo),
-              todayString
-            )
-          }
-          style={quickButtonStyle}
+          onClick={() => updateDateRange(sevenDaysAgo, todayString)}
+          className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-100"
         >
           Last 7 Days
         </button>
 
         <button
           type="button"
-          onClick={() =>
-            updateDateRange(
-              formatDate(thirtyDaysAgo),
-              todayString
-            )
-          }
-          style={quickButtonStyle}
+          onClick={() => updateDateRange(thirtyDaysAgo, todayString)}
+          className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-100"
         >
           Last 30 Days
         </button>
 
         <button
           type="button"
-          onClick={() =>
-            updateDateRange(
-              formatDate(firstDayOfMonth),
-              todayString
-            )
-          }
-          style={quickButtonStyle}
+          onClick={() => updateDateRange(firstDayOfMonth, todayString)}
+          className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-100"
         >
           This Month
         </button>
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '12px',
-          alignItems: 'end',
-        }}
-      >
+      <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label
-            htmlFor="report-start-date"
-            style={{
-              display: 'block',
-              fontSize: '14px',
-              fontWeight: 600,
-              marginBottom: '6px',
-            }}
-          >
-            Start Date
+          <label htmlFor="report-start" className="mb-1 block text-sm">
+            Start date
           </label>
-
           <input
-            id="report-start-date"
+            id="report-start"
             type="date"
             value={startDate}
+            max={endDate}
             onChange={(event) =>
-              updateDateRange(
-                event.target.value,
-                endDate
-              )
+              updateDateRange(event.target.value, endDate)
             }
-            style={{
-              padding: '10px 12px',
-              borderRadius: '8px',
-              border: '1px solid #d1d5db',
-            }}
+            className="rounded-lg border px-3 py-2"
           />
         </div>
 
         <div>
-          <label
-            htmlFor="report-end-date"
-            style={{
-              display: 'block',
-              fontSize: '14px',
-              fontWeight: 600,
-              marginBottom: '6px',
-            }}
-          >
-            End Date
+          <label htmlFor="report-end" className="mb-1 block text-sm">
+            End date
           </label>
-
           <input
-            id="report-end-date"
+            id="report-end"
             type="date"
             value={endDate}
+            min={startDate}
+            max={todayString}
             onChange={(event) =>
-              updateDateRange(
-                startDate,
-                event.target.value
-              )
+              updateDateRange(startDate, event.target.value)
             }
-            style={{
-              padding: '10px 12px',
-              borderRadius: '8px',
-              border: '1px solid #d1d5db',
-            }}
+            className="rounded-lg border px-3 py-2"
           />
         </div>
       </div>
     </div>
   )
-}
-
-const quickButtonStyle = {
-  padding: '10px 16px',
-  borderRadius: '8px',
-  border: '1px solid #d1d5db',
-  background: '#f8fafc',
-  fontSize: '14px',
-  fontWeight: 600,
-  cursor: 'pointer',
 }
