@@ -229,15 +229,18 @@ export default function BookingPaymentPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto min-h-screen max-w-lg bg-[#090909] p-6 text-white">
+      <main className="min-h-screen w-full bg-[#090909] text-white">
+      <div className="mx-auto w-full max-w-lg px-4 py-6 sm:px-6">
         Verifying your booking...
+      </div>
       </main>
     )
   }
 
   if (error || !session || !token) {
     return (
-      <main className="mx-auto min-h-screen max-w-lg bg-[#090909] p-6 text-white">
+      <main className="min-h-screen w-full bg-[#090909] text-white">
+      <div className="mx-auto w-full max-w-lg px-4 py-6 sm:px-6">
         <h1 className="text-2xl font-bold text-white">Booking Payment</h1>
         <p className="mt-4 rounded-lg border border-red-900 bg-red-950/50 p-3 text-red-300">
           {error || 'This payment link is invalid or expired.'}
@@ -248,12 +251,14 @@ export default function BookingPaymentPage() {
         >
           Back to Homepage
         </Link>
+      </div>
       </main>
     )
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-lg bg-[#090909] p-6 text-white">
+    <main className="min-h-screen w-full bg-[#090909] text-white">
+      <div className="mx-auto w-full max-w-lg px-4 py-6 sm:px-6">
       <h1 className="text-3xl font-bold tracking-tight text-white">Complete Your Booking</h1>
 
       {session.paymentStatus === 'unpaid' && (
@@ -467,6 +472,7 @@ export default function BookingPaymentPage() {
           </form>
         </>
       )}
-    </main>
+    </div>
+      </main>
   )
 }
