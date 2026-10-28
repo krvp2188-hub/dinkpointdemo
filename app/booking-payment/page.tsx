@@ -154,7 +154,7 @@ export default function BookingPaymentPage() {
 
     try {
       const canvas = await html2canvas(screenshotRef.current, {
-        backgroundColor: '#ffffff',
+        backgroundColor: '#090909',
         scale: 2,
         useCORS: true,
       })
@@ -229,7 +229,7 @@ export default function BookingPaymentPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-lg p-6">
+      <main className="min-h-screen bg-[#090909] px-4 py-6 text-white sm:px-6">
         Verifying your booking...
       </main>
     )
@@ -237,14 +237,14 @@ export default function BookingPaymentPage() {
 
   if (error || !session || !token) {
     return (
-      <main className="mx-auto max-w-lg p-6">
-        <h1 className="text-2xl font-bold">Booking Payment</h1>
-        <p className="mt-4 text-red-600">
+      <main className="min-h-screen bg-[#090909] px-4 py-6 text-white sm:px-6">
+        <h1 className="text-2xl font-bold text-white">Booking Payment</h1>
+        <p className="mt-4 rounded-lg border border-red-900 bg-red-950/50 p-3 text-red-300">
           {error || 'This payment link is invalid or expired.'}
         </p>
         <Link
           href="/"
-          className="mt-5 inline-flex rounded-lg bg-green-700 px-4 py-3 font-semibold text-white hover:bg-green-800"
+          className="mt-5 inline-flex rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-500"
         >
           Back to Homepage
         </Link>
@@ -253,11 +253,11 @@ export default function BookingPaymentPage() {
   }
 
   return (
-    <main className="mx-auto max-w-lg p-6">
-      <h1 className="text-3xl font-bold">Complete Your Booking</h1>
+    <main className="min-h-screen bg-[#090909] px-4 py-6 text-white sm:px-6">
+      <h1 className="text-3xl font-bold tracking-tight text-white">Complete Your Booking</h1>
 
       {session.paymentStatus === 'unpaid' && (
-        <section className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4">
+        <section className="mt-4 rounded-xl border border-amber-500/60 bg-amber-950/40 p-4 text-amber-100">
           <p className="text-sm">
             Your booking is pending until staff reviews your GCash payment receipt.
             Please submit your receipt after payment and wait for confirmation.
@@ -268,15 +268,15 @@ export default function BookingPaymentPage() {
       {/* This is the only booking summary and reference screenshot area. */}
       <div
         ref={screenshotRef}
-        className="mt-5 rounded-xl border bg-white p-4"
+        className="mt-5 rounded-xl border border-white/15 bg-[#111111] p-4 text-white shadow-lg shadow-black/20"
       >
-        <h2 className="mb-3 text-sm font-semibold text-green-800">
+        <h2 className="mb-3 text-sm font-semibold text-emerald-400">
           Dink Point Pickleball
         </h2>
 
-        <h2 className="text-xl font-bold">Your Selection</h2>
+        <h2 className="text-xl font-bold text-white">Your Selection</h2>
 
-        <div className="mt-4 rounded-2xl bg-[#F7F8F5] p-4">
+        <div className="mt-4 rounded-2xl border border-white/10 bg-[#1a1a1a] p-4 text-gray-100">
           <p>
             <strong>Date:</strong> {session.bookingDate}
           </p>
@@ -295,7 +295,7 @@ export default function BookingPaymentPage() {
               {session.slots.map((slot, index) => (
                 <div
                   key={`${slot.courtName}-${slot.startTime}-${index}`}
-                  className="flex items-center justify-between gap-3 rounded-lg bg-white p-3"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-[#242424] p-3 text-gray-100"
                 >
                   <span>
                     {slot.courtName} · {formatTime(slot.startTime)}–
@@ -306,7 +306,7 @@ export default function BookingPaymentPage() {
             </div>
           </div>
 
-          <div className="mt-4 border-t pt-4">
+          <div className="mt-4 border-t border-white/10 pt-4">
             <p>
               <strong>Total Hours:</strong> {session.slots.length}
             </p>
@@ -323,15 +323,15 @@ export default function BookingPaymentPage() {
         </div>
 
         {session.paymentStatus === 'paid' && (
-          <section className="mt-4 rounded-xl border p-4">
+          <section className="mt-4 rounded-xl border border-white/15 bg-[#151515] p-4 text-white">
             <h2 className="text-xl font-semibold">Payment received</h2>
             <p className="mt-2">
               Your payment has been recorded. Save your booking reference
               for future inquiries.
             </p>
 
-            <div className="mt-4 rounded-lg bg-gray-50 p-4">
-              <p className="text-sm font-medium text-gray-600">
+            <div className="mt-4 rounded-lg border border-white/10 bg-[#202020] p-4">
+              <p className="text-sm font-medium text-gray-400">
                 Your booking reference
               </p>
               <p className="mt-1 break-all text-lg font-bold">
@@ -342,13 +342,13 @@ export default function BookingPaymentPage() {
         )}
 
         {session.paymentStatus === 'cancelled' && (
-          <section className="mt-4 rounded-xl border p-4">
+          <section className="mt-4 rounded-xl border border-white/15 bg-[#151515] p-4 text-white">
             <h2 className="text-xl font-semibold">Booking cancelled</h2>
             <p className="mt-2">
               This booking has been cancelled. Please contact staff if you
               believe this is an error.
             </p>
-            <p className="mt-3 text-sm text-gray-600">
+            <p className="mt-3 text-sm text-gray-400">
               Booking reference
             </p>
             <p className="mt-1 break-all font-bold">
@@ -364,7 +364,7 @@ export default function BookingPaymentPage() {
             type="button"
             onClick={() => void saveBookingScreenshot()}
             disabled={savingScreenshot}
-            className="mt-3 w-full rounded-lg border border-green-700 px-4 py-3 font-semibold text-green-800 hover:bg-green-50 disabled:opacity-50"
+            className="mt-3 w-full rounded-lg border border-emerald-500/70 px-4 py-3 font-semibold text-emerald-300 transition hover:bg-emerald-950/50 disabled:opacity-50"
           >
             {savingScreenshot
               ? 'Saving Screenshot...'
@@ -373,7 +373,7 @@ export default function BookingPaymentPage() {
 
           <Link
             href="/"
-            className="mt-4 block w-full rounded-lg bg-green-700 px-4 py-3 text-center font-semibold text-white hover:bg-green-800"
+            className="mt-4 block w-full rounded-lg bg-emerald-600 px-4 py-3 text-center font-semibold text-white transition hover:bg-emerald-500"
           >
             Back to Homepage
           </Link>
@@ -382,14 +382,14 @@ export default function BookingPaymentPage() {
 
       {session.paymentStatus === 'unpaid' && (
         <>
-          <section className="mt-6 rounded-xl border p-4">
+          <section className="mt-6 rounded-xl border border-white/15 bg-[#111111] p-4 text-white">
             <h2 className="text-xl font-semibold">Pay with GCash</h2>
             <img
               src="/images/QR.png"
               alt="Dink Point Pickleball GCash QR code"
               className="mx-auto mt-4 w-full max-w-xs"
             />
-            <p className="mt-4 text-sm text-gray-600">
+            <p className="mt-4 text-sm leading-6 text-gray-300">
               Pay the exact total shown above. Check the recipient details
               in GCash before confirming.
             </p>
@@ -397,7 +397,7 @@ export default function BookingPaymentPage() {
 
           <form
             onSubmit={submitReceipt}
-            className="mt-6 space-y-4 rounded-xl border p-4"
+            className="mt-6 space-y-4 rounded-xl border border-white/15 bg-[#111111] p-4 text-white"
           >
             <h2 className="text-xl font-semibold">
               Submit Payment Receipt
@@ -406,7 +406,7 @@ export default function BookingPaymentPage() {
             <div>
               <label
                 htmlFor="transactionReference"
-                className="mb-1 block text-sm font-medium"
+                className="mb-1 block text-sm font-medium text-gray-200"
               >
                 GCash transaction reference
               </label>
@@ -421,7 +421,7 @@ export default function BookingPaymentPage() {
                 minLength={4}
                 maxLength={100}
                 autoComplete="off"
-                className="w-full rounded-lg border p-3"
+                className="w-full rounded-lg border border-white/25 bg-[#090909] p-3 text-white placeholder:text-gray-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
                 placeholder="Enter your transaction reference"
               />
             </div>
@@ -429,7 +429,7 @@ export default function BookingPaymentPage() {
             <div>
               <label
                 htmlFor="receipt"
-                className="mb-1 block text-sm font-medium"
+                className="mb-1 block text-sm font-medium text-gray-200"
               >
                 Receipt image (JPG, PNG, or WebP; max 5 MB)
               </label>
@@ -442,25 +442,25 @@ export default function BookingPaymentPage() {
                 onChange={event =>
                   setReceipt(event.target.files?.[0] || null)
                 }
-                className="w-full rounded-lg border p-3"
+                className="w-full rounded-lg border border-white/25 bg-[#090909] p-3 text-white placeholder:text-gray-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
               />
             </div>
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-lg bg-green-700 px-4 py-3 font-semibold text-white disabled:opacity-50"
+              className="w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? 'Submitting...' : 'Submit Receipt'}
             </button>
 
             {message && (
-              <p role="status" className="text-sm">
+              <p role="status" className="rounded-lg border border-white/10 bg-[#202020] p-3 text-sm text-gray-100">
                 {message}
               </p>
             )}
 
-            <p className="text-sm text-gray-500">
+            <p className="text-sm leading-6 text-gray-400">
               Your booking remains unconfirmed until staff verifies the
               actual GCash transaction.
             </p>
