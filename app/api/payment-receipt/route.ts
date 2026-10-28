@@ -160,17 +160,16 @@ export async function POST(request: Request) {
     const { data: authorization, error: authError } =
       await supabaseAdmin
         .from('guest_payment_authorizations')
-        .select('booking_reference, token_hash, expires_at, revoked_at')
+.select('booking_reference, token_hash, revoked_at')
         .eq('booking_reference', bookingReference)
         .maybeSingle()
 
-    if (
-      authError ||
-      !authorization ||
-      authorization.revoked_at ||
-      new Date(authorization.expires_at).getTime() <= Date.now() ||
-      !hashesMatch(authorization.token_hash, tokenHash)
-    ) {
+if (
+  authError ||
+  !authorization ||
+  authorization.revoked_at ||
+  !hashesMatch(authorization.token_hash, tokenHash)
+) {
       return NextResponse.json(
         { error: 'Invalid or expired payment link.' },
         { status: 401 }
