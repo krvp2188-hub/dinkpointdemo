@@ -34,6 +34,7 @@ function formatTime(time: string): string {
 
 export default function BookingPaymentPage() {
   const screenshotRef = useRef<HTMLDivElement>(null)
+  const receiptInputRef = useRef<HTMLInputElement>(null)
   const [savingScreenshot, setSavingScreenshot] = useState(false)
   const [token, setToken] = useState('')
   const tokenRef = useRef('')
@@ -182,6 +183,11 @@ export default function BookingPaymentPage() {
 
     if (!transactionReference.trim()) {
       setMessage('Please enter your GCash transaction reference.')
+      return
+    }
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(receipt.type)) {
+      setMessage('Please upload a JPG, PNG, or WebP image.')
       return
     }
 
@@ -431,33 +437,68 @@ export default function BookingPaymentPage() {
               />
             </div>
 
-            <div>
+            <div className="space-y-2">
               <label
                 htmlFor="receipt"
-                className="mb-1 block text-sm font-medium text-gray-200"
+                className="block text-sm font-medium text-gray-200"
               >
-                Receipt image (JPG, PNG, or WebP; max 5 MB)
+                GCash receipt image <span className="text-emerald-400">(Required)</span>
               </label>
               <input
+                ref={receiptInputRef}
                 id="receipt"
                 name="receipt"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 required
-                onChange={event =>
-                  setReceipt(event.target.files?.[0] || null)
-                }
-                className="w-full rounded-lg border border-white/25 bg-[#090909] p-3 text-white placeholder:text-gray-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+                onChange={event => {
+                  const selectedFile = event.target.files?.[0] || null
+
+                  if (selectedFile && !['image/jpeg', 'image/png', 'image/webp'].includes(selectedFile.type)) {
+                    setReceipt(null)
+                    event.target.value = ''
+                    setMessage('Please upload a JPG, PNG, or WebP image.')
+                    return
+                  }
+
+                  if (selectedFile && selectedFile.size > 5 * 1024 * 1024) {
+                    setReceipt(null)
+                    event.target.value = ''
+                    setMessage('The receipt image must be 5 MB or smaller.')
+                    return
+                  }
+
+                  setMessage('')
+                  setReceipt(selectedFile)
+                }}
+                className="sr-only"
               />
+              <button
+                type="button"
+                onClick={() => receiptInputRef.current?.click()}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/60 bg-[#090909] px-4 py-3 font-semibold text-emerald-300 transition hover:bg-emerald-500/10 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+                aria-describedby="receipt-help receipt-selected"
+              >
+                <span aria-hidden="true">↑</span>
+                {receipt ? 'Change GCash Receipt' : 'Upload GCash Receipt'}
+              </button>
+              <p id="receipt-help" className="text-xs leading-5 text-gray-400">
+                Upload a JPG, PNG, or WebP image, up to 5 MB. You must attach your receipt before submitting.
+              </p>
+              <p id="receipt-selected" className="break-all text-sm text-gray-200" aria-live="polite">
+                {receipt ? `Selected: ${receipt.name}` : 'No receipt uploaded yet.'}
+              </p>
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {submitting ? 'Submitting...' : 'Submit Receipt'}
-            </button>
+            {receipt && (
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {submitting ? 'Submitting...' : 'Submit Receipt'}
+              </button>
+            )}
 
             {message && (
               <p role="status" className="rounded-lg border border-white/10 bg-[#202020] p-3 text-sm text-gray-100">
