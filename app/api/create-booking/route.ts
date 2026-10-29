@@ -41,23 +41,35 @@ export async function POST(request: Request) {
         }
       )
     }	
-    const siteUrl = process.env.SITE_URL
 
-    if (!siteUrl) {
-      return NextResponse.json(
-        { error: 'Site URL is not configured.' },
-        { status: 500 }
-      )
-    }
+const siteUrl = process.env.SITE_URL
 
-    const requestOrigin = request.headers.get('origin')
+if (!siteUrl) {
+  return NextResponse.json(
+    { error: 'Site URL is not configured.' },
+    { status: 500 }
+  )
+}
 
-    if (requestOrigin !== new URL(siteUrl).origin) {
-      return NextResponse.json(
-        { error: 'Request origin is not allowed.' },
-        { status: 403 }
-      )
-    }	
+const requestOrigin = request.headers.get('origin')
+
+const allowedOrigins = new Set(
+  [
+    siteUrl,
+    'https://dinkpointdemo.vercel.app',
+    'https://dinkpointpanabo.com',
+    'https://www.dinkpointpanabo.com',
+  ].map((origin) => new URL(origin).origin)
+)
+
+if (!requestOrigin || !allowedOrigins.has(requestOrigin)) {
+  return NextResponse.json(
+    { error: 'Request origin is not allowed.' },
+    { status: 403 }
+  )
+}
+
+
     const body: unknown = await request.json()
 
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
