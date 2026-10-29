@@ -446,7 +446,9 @@ export default async function StaffPage() {
             }
           />
         </div>
-		  <PaymentReceiptReview />
+
+        {/* Keep receipt review on the main staff bookings page. */}
+        <PaymentReceiptReview />
         <section
           style={{
             background:
