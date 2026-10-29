@@ -545,7 +545,7 @@ async function createBooking() {
 
         <div className="mb-8 rounded-2xl border border-[#E5EAE3] bg-white p-3 shadow-[0_5px_18px_rgba(75,35,48,0.06)] sm:p-4">
           <div className="flex items-stretch gap-2 overflow-x-auto pb-1">
-            {Array.from({ length: 15 }, (_, index) => {
+            {Array.from({ length: 13 }, (_, index) => {
               const baseDate = currentDateTime.date || selectedDate
               const date = new Date(`${baseDate}T12:00:00`)
               date.setDate(date.getDate() + index)
@@ -572,7 +572,7 @@ async function createBooking() {
                     setBookingReference('')
                   }}
                   aria-pressed={isSelected}
-                  className={`flex min-w-[66px] shrink-0 flex-col items-center justify-center rounded-2xl border px-3 py-3 text-center transition sm:min-w-[68px] ${
+                  className={`flex min-w-[66px] shrink-0 flex-col items-center justify-center rounded-2xl border px-3 py-3 text-center transition sm:min-w-[77px] ${
                     isSelected
                       ? 'border-[#263F34] bg-[#263F34] text-white shadow-sm'
                       : 'border-[#E5EAE3] bg-white text-[#263F34] hover:border-[#D6E3A6] hover:bg-[#F7F8F5]'
@@ -589,7 +589,7 @@ async function createBooking() {
               )
             })}
 
-            <div className="relative flex min-w-[68px] shrink-0">
+            <div className="relative flex min-w-[77px] shrink-0">
               <button
                 type="button"
                 onClick={() => {
