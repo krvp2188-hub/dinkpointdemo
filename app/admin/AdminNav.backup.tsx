@@ -121,7 +121,7 @@ export default function AdminNav() {
           minHeight: '64px',
           flexWrap: 'wrap',
           overflow: 'visible',
-          color: '#1f2937',
+          color: '#0f172a',
         }}
       >
         {links.map((link) => {
@@ -144,8 +144,8 @@ export default function AdminNav() {
                 whiteSpace: 'nowrap',
                 fontSize: '14px',
                 fontWeight: 600,
-                background: isActive ? '#eff6ff' : 'transparent',
-                color: isActive ? '#2563eb' : '#475569',
+                background: isActive ? '#ccfbf1' : 'transparent',
+                color: isActive ? '#0f766e' : '#475569',
                 flexShrink: 0,
               }}
             >
@@ -170,7 +170,7 @@ export default function AdminNav() {
               border: '1px solid #e5e7eb',
               borderRadius: '10px',
               background: isOpen ? '#f8fafc' : 'white',
-              color: '#1f2937',
+              color: '#0f172a',
               padding: '9px 12px',
               cursor: 'pointer',
               fontSize: '20px',
@@ -213,7 +213,7 @@ export default function AdminNav() {
                 maxHeight: '460px',
                 overflowY: 'auto',
                 background: 'white',
-                color: '#1f2937',
+                color: '#0f172a',
                 border: '1px solid #e5e7eb',
                 borderRadius: '14px',
                 boxShadow: '0 12px 32px rgba(15, 23, 42, 0.16)',
@@ -236,7 +236,7 @@ export default function AdminNav() {
                   style={{
                     border: 0,
                     background: 'transparent',
-                    color: '#2563eb',
+                    color: '#0f766e',
                     cursor: 'pointer',
                     fontSize: '12px',
                     fontWeight: 600,
@@ -279,7 +279,7 @@ export default function AdminNav() {
                       style={{
                         padding: '14px 16px',
                         borderBottom: '1px solid #f1f5f9',
-                        background: isRead ? 'white' : '#eff6ff',
+                        background: isRead ? 'white' : '#ccfbf1',
                         cursor: notification.booking_reference ? 'pointer' : 'default',
                       }}
                     >
@@ -327,7 +327,7 @@ export default function AdminNav() {
                                   setIsOpen(false)
                                 }}
                                 style={{
-                                  color: '#2563eb',
+                                  color: '#0f766e',
                                   fontSize: '12px',
                                   fontWeight: 700,
                                   textDecoration: 'none',
@@ -350,7 +350,7 @@ export default function AdminNav() {
                                 padding: 0,
                                 border: 0,
                                 background: 'transparent',
-                                color: '#2563eb',
+                                color: '#0f766e',
                                 fontSize: '12px',
                                 fontWeight: 600,
                                 cursor: 'pointer',
