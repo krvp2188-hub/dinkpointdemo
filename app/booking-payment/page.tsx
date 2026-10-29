@@ -10,8 +10,10 @@ type PaymentSession = {
   customerName: string
   customerEmail: string
   receiptSubmitted: boolean
+  receiptSubmittedAt: string | null
   totalAmount: number
   bookingDate: string
+  bookingCreatedAt: string
   slots: {
     courtName: string
     startTime: string
@@ -33,6 +35,26 @@ function formatTime(time: string): string {
   const displayHour = hour % 12 || 12
 
   return `${displayHour}:${minutes} ${period}`
+}
+
+
+function formatBookingTimestamp(value: string): string {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Not available'
+  }
+
+  return new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  }).format(date) + ' (Philippine Time)'
 }
 
 export default function BookingPaymentPage() {
@@ -228,6 +250,7 @@ export default function BookingPaymentPage() {
 
       setMessage('')
       setReceiptSubmitted(true)
+      setSession(current => current ? { ...current, receiptSubmitted: true, receiptSubmittedAt: new Date().toISOString() } : current)
       setReceipt(null)
       setTransactionReference('')
     } catch {
@@ -269,17 +292,23 @@ export default function BookingPaymentPage() {
   return (
     <main className="min-h-screen w-full bg-[#090909] text-white">
       <div className="mx-auto w-full max-w-lg px-4 py-6 sm:px-6">
-      <h1 className="text-3xl font-bold tracking-tight text-white text-center">
-        {session.paymentStatus === 'paid'
-          ? 'Congratulations!, Your booking is confirmed.'
-          : receiptSubmitted
-            ? 'Court Reservation Verifying...'
-            : 'Complete Your Booking'}
+      <h1 className="text-center text-3xl font-bold tracking-tight text-white">
+        {session.paymentStatus === 'paid' ? 'Congrats! Your reservation is secured!' : receiptSubmitted ? 'Court Reservation Verifying...' : 'Complete Your Booking'}
       </h1>
 
       {receiptSubmitted && session.paymentStatus === 'unpaid' && (
-        <section className="mt-4 rounded-xl border border-emerald-500/50 bg-emerald-950/40 p-4 text-emerald-100">
-          <p className="font-semibold">Success!, Your slot is locked and we're verifying your payment.</p>
+        <section className="mt-4 rounded-xl border border-emerald-500/50 bg-emerald-950/40 p-4 text-center text-emerald-100">
+          <p className="text-sm leading-6">
+            Your slot is locked, and we're verifying your GCash payment. Your booking will be confirmed once staff approves your receipt.
+          </p>
+        </section>
+      )}
+
+      {session.paymentStatus === 'paid' && (
+        <section className="mt-4 rounded-xl border border-emerald-500/50 bg-emerald-950/40 p-4 text-center text-emerald-100">
+          <p className="text-sm leading-6">
+            Your reservation is confirmed. We look forward to seeing you on the court!
+          </p>
         </section>
       )}
 
@@ -308,8 +337,16 @@ export default function BookingPaymentPage() {
         </div>
 
         <div className="mt-4 rounded-2xl border border-white/10 bg-[#1a1a1a] p-4 text-gray-100">
+          <p className="mb-3 rounded-lg border border-emerald-500/20 bg-emerald-950/30 p-3">
+            <strong>Receipt submitted for approval:</strong>{' '}
+            <span>
+              {session.receiptSubmittedAt
+                ? formatBookingTimestamp(session.receiptSubmittedAt)
+                : 'Not submitted yet'} 
+            </span>
+          </p>
           <p>
-            <strong>Date:</strong> {session.bookingDate}
+            <strong>Playing date:</strong> {session.bookingDate}
           </p>
 
           <p className="mt-1">

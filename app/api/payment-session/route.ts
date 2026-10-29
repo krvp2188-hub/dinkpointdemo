@@ -93,54 +93,60 @@ export async function POST(request: Request) {
       )
     }
 
-    // Load booking details using the actual database column names.
     const { data: bookings, error: bookingError } =
       await supabaseAdmin
         .from('bookings')
-        .select(`
-          amount,
-          status,
-          payment_status,
-          booking_date,
-          start_time,
-          end_time,
-          court_id,
-          customer_name_at_booking,
-          customer_email_at_booking
-        `)
+        .select('amount, status, payment_status, booking_date, start_time, end_time, court_id, customer_id, created_at')
         .eq('booking_reference', reference)
         .order('start_time', { ascending: true })
 
     if (bookingError || !bookings || bookings.length === 0) {
-      if (bookingError) {
-        console.error(
-          'Payment session booking query failed:',
-          bookingError.message
-        )
-      }
-
       return NextResponse.json(
         { error: 'Booking details could not be found.' },
         { status: 404 }
       )
     }
 
-    const courtIds = [
-      ...new Set(bookings.map(booking => booking.court_id)),
-    ]
+    // Load customer details from the customer record linked to this booking.
+    const customerId = bookings[0].customer_id
+    let customerName = ''
+    let customerEmail = ''
 
-    const { data: courts, error: courtsError } =
-      await supabaseAdmin
-        .from('courts')
-        .select('id, name')
-        .in('id', courtIds)
+    if (customerId) {
+      const { data: customer, error: customerError } = await supabaseAdmin
+        .from('customers')
+        .select('name, email')
+        .eq('id', customerId)
+        .maybeSingle()
+
+      if (customerError) {
+        console.error('Payment session customer lookup failed:', customerError.message)
+      } else if (customer) {
+        customerName = customer.name ?? ''
+        customerEmail = customer.email ?? ''
+      }
+    }
+
+    // Keep receipt submission status/time based on the receipt record, not booking creation.
+    const { data: receiptRecord, error: receiptError } = await supabaseAdmin
+      .from('payment_receipts')
+      .select('submitted_at, status')
+      .eq('booking_reference', reference)
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (receiptError) {
+      console.error('Payment session receipt lookup failed:', receiptError.message)
+    }
+
+    const courtIds = [...new Set(bookings.map(booking => booking.court_id))]
+    const { data: courts, error: courtsError } = await supabaseAdmin
+      .from('courts')
+      .select('id, name')
+      .in('id', courtIds)
 
     if (courtsError) {
-      console.error(
-        'Payment session court query failed:',
-        courtsError.message
-      )
-
       return NextResponse.json(
         { error: 'Court details could not be loaded.' },
         { status: 500 }
@@ -156,62 +162,40 @@ export async function POST(request: Request) {
       return sum + (Number.isFinite(amount) ? amount : 0)
     }, 0)
 
-    const { data: pendingReceipt, error: receiptError } =
-      await supabaseAdmin
-        .from('payment_receipts')
-        .select('id')
-        .eq('booking_reference', reference)
-        .eq('status', 'pending')
-        .limit(1)
-        .maybeSingle()
-
-    if (receiptError) {
-      console.error(
-        'Payment session receipt query failed:',
-        receiptError.message
-      )
-
-      return NextResponse.json(
-        { error: 'Receipt status could not be loaded.' },
-        { status: 500 }
-      )
-    }
-
     const allPaid = bookings.every(
       booking => booking.payment_status === 'paid'
     )
-
     const allCancelled = bookings.every(
       booking => booking.status === 'cancelled'
     )
 
     return NextResponse.json({
       bookingReference: reference,
-
-      // These fields now match the actual bookings table.
-      customerName: bookings[0].customer_name_at_booking ?? '',
-      customerEmail: bookings[0].customer_email_at_booking ?? '',
-
-      receiptSubmitted: Boolean(pendingReceipt),
+      customerName,
+      customerEmail,
+      receiptSubmitted: Boolean(receiptRecord),
+      receiptSubmittedAt: receiptRecord?.submitted_at ?? null,
       totalAmount,
       bookingDate: bookings[0].booking_date,
-
+      bookingCreatedAt: bookings.reduce((earliest, booking) =>
+        new Date(booking.created_at).getTime() < new Date(earliest).getTime()
+          ? booking.created_at
+          : earliest,
+        bookings[0].created_at
+      ),
       slots: bookings.map(booking => ({
         courtName: courtNames.get(booking.court_id) ?? 'Court',
         startTime: booking.start_time,
         endTime: booking.end_time,
         status: booking.status,
       })),
-
       paymentStatus: allPaid
         ? 'paid'
         : allCancelled
           ? 'cancelled'
           : 'unpaid',
     })
-  } catch (error) {
-    console.error('Payment session error:', error)
-
+  } catch {
     return NextResponse.json(
       { error: 'Unable to verify this payment link.' },
       { status: 400 }

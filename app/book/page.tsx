@@ -315,6 +315,7 @@ const isTimeWithinOperatingHours = (
 useEffect(() => {
   if (!selectedDate) {
     setOperatingHoursLoading(true)
+    setOperatingHours(null)
     return
   }
 
@@ -324,28 +325,31 @@ useEffect(() => {
     setOperatingHoursLoading(true)
     setOperatingHours(null)
 
-    const date = new Date(selectedDate + 'T00:00:00')
-    const dayOfWeek = date.getDay()
+    try {
+      const response = await fetch(
+        `/api/operating-hours?date=${encodeURIComponent(selectedDate)}`,
+        { cache: 'no-store', headers: { Accept: 'application/json' } }
+      )
+      const result = await response.json()
 
-    const result = await supabase
-      .from('operating_hours')
-      .select('open_time, close_time, is_open')
-      .eq('day_of_week', dayOfWeek)
-      .single()
+      if (cancelled) return
 
-    if (cancelled) return
+      if (!response.ok || !result.operatingHours) {
+        throw new Error(result.error || 'Could not load operating hours.')
+      }
 
-    if (result.error) {
-      console.error('OPERATING HOURS ERROR:', result.error)
-      setOperatingHoursLoading(false)
-      return
+      setOperatingHours(result.operatingHours)
+    } catch (error) {
+      if (!cancelled) {
+        console.error('OPERATING HOURS ERROR:', error)
+        setOperatingHours(null)
+      }
+    } finally {
+      if (!cancelled) setOperatingHoursLoading(false)
     }
-
-    setOperatingHours(result.data)
-    setOperatingHoursLoading(false)
   }
 
-  loadOperatingHours()
+  void loadOperatingHours()
 
   return () => {
     cancelled = true

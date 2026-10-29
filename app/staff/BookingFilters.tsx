@@ -3,6 +3,16 @@
 import { useMemo, useState } from 'react'
 import BookingActions from './BookingActions'
 
+type Receipt = {
+  id: string
+  bookingReference: string
+  transactionReference: string
+  submittedAt: string
+  status: string
+  staffNote: string | null
+  imageUrl: string | null
+}
+
 type Booking = {
   booking_reference: string
   customer_name: string
@@ -197,6 +207,36 @@ function BookingCard({
 }: {
   booking: Booking
 }) {
+  const [receiptOpen, setReceiptOpen] = useState(false)
+  const [receiptLoading, setReceiptLoading] = useState(false)
+  const [receiptError, setReceiptError] = useState('')
+  const [receipts, setReceipts] = useState<Receipt[]>([])
+  const [receiptLoaded, setReceiptLoaded] = useState(false)
+
+  async function openReceiptViewer() {
+    setReceiptOpen(true)
+    setReceiptError('')
+    if (receiptLoaded) return
+
+    setReceiptLoading(true)
+    try {
+      const response = await fetch(`/api/pending-receipts?reference=${encodeURIComponent(booking.booking_reference)}`, { cache: 'no-store' })
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload.error || 'Could not load receipt.')
+      }
+      const matching = (payload.receipts ?? []).filter(
+        (receipt: Receipt) => receipt.bookingReference === booking.booking_reference
+      )
+      setReceipts(matching)
+      setReceiptLoaded(true)
+    } catch (error) {
+      setReceiptError(error instanceof Error ? error.message : 'Could not load receipt.')
+    } finally {
+      setReceiptLoading(false)
+    }
+  }
+
   return (
     <div
       style={{
@@ -309,6 +349,11 @@ function BookingCard({
           marginTop: '20px',
           paddingTop: '16px',
           borderTop: '1px solid #eee',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '12px',
+          flexWrap: 'wrap',
         }}
       >
         <BookingActions
@@ -316,7 +361,94 @@ function BookingCard({
           status={booking.status}
           paymentStatus={booking.payment_status}
         />
+        <button
+          type="button"
+          onClick={openReceiptViewer}
+          style={{
+            marginLeft: 'auto',
+            padding: '10px 14px',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            background: '#111827',
+            color: '#fff',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          View GCash Receipt
+        </button>
       </div>
+
+      {receiptOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`GCash receipt for ${booking.booking_reference}`}
+          onClick={() => setReceiptOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: 'rgba(15, 23, 42, 0.72)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: 'min(760px, 100%)',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              background: '#fff',
+              borderRadius: '14px',
+              padding: '22px',
+              color: '#111827',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '20px' }}>Submitted GCash Receipt</h2>
+                <p style={{ margin: '8px 0 0', color: '#6b7280', fontSize: '13px', overflowWrap: 'anywhere' }}>
+                  {booking.booking_reference}
+                </p>
+              </div>
+              <button type="button" onClick={() => setReceiptOpen(false)} aria-label="Close receipt viewer" style={{ border: 0, background: '#f3f4f6', borderRadius: '8px', padding: '8px 12px', cursor: 'pointer' }}>
+                Close
+              </button>
+            </div>
+
+            {receiptLoading ? (
+              <p style={{ padding: '28px 0' }}>Loading receipt...</p>
+            ) : receiptError ? (
+              <p role="alert" style={{ padding: '20px 0', color: '#b91c1c' }}>{receiptError}</p>
+            ) : receipts.length === 0 ? (
+              <p style={{ padding: '24px 0', color: '#6b7280' }}>No receipt submitted for this booking.</p>
+            ) : (
+              <div style={{ display: 'grid', gap: '22px', marginTop: '22px' }}>
+                {receipts.map((receipt) => (
+                  <div key={receipt.id} style={{ borderTop: '1px solid #e5e7eb', paddingTop: '18px' }}>
+                    <div style={{ display: 'grid', gap: '6px', marginBottom: '14px', fontSize: '14px' }}>
+                      <div><strong>Status:</strong> <span style={{ textTransform: 'capitalize' }}>{receipt.status}</span></div>
+                      <div><strong>GCash reference:</strong> {receipt.transactionReference || 'Not provided'}</div>
+                      <div><strong>Submitted:</strong> {new Date(receipt.submittedAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</div>
+                      {receipt.staffNote && <div><strong>Staff note:</strong> {receipt.staffNote}</div>}
+                    </div>
+                    {receipt.imageUrl ? (
+                      <a href={receipt.imageUrl} target="_blank" rel="noreferrer" style={{ color: '#1d4ed8', fontSize: '14px' }}>Open image in a new tab</a>
+                    ) : (
+                      <p style={{ color: '#b91c1c', fontSize: '14px' }}>The receipt image could not be opened. Please check that the stored file still exists.</p>
+                    )}
+                    {receipt.imageUrl && <img src={receipt.imageUrl} alt={`GCash receipt for ${booking.booking_reference}`} style={{ display: 'block', width: '100%', maxHeight: '65vh', objectFit: 'contain', marginTop: '12px', border: '1px solid #e5e7eb', borderRadius: '8px' }} />}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

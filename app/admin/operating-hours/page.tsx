@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import EditOperatingHours from './EditOperatingHours'
+import DateSpecificOperatingHours from './DateSpecificOperatingHours'
 import AdminNav from '@/app/admin/AdminNav'
 
 const dayNames = [
@@ -42,6 +43,11 @@ export default async function OperatingHoursPage() {
     .select('*')
     .order('day_of_week')
 
+  const { data: dateOverrides, error: overridesError } = await supabase
+    .from('operating_hours_overrides')
+    .select('*')
+    .order('start_date', { ascending: true })
+
   if (error) {
     return (
       <main style={{ padding: '30px' }}>
@@ -82,6 +88,15 @@ export default async function OperatingHoursPage() {
       >
         Manage the days and hours when customers can book the courts.
       </p>
+
+      <DateSpecificOperatingHours
+        initialOverrides={dateOverrides || []}
+        loadError={overridesError?.message || ''}
+      />
+
+      <h2 style={{ margin: '30px 0 12px', fontSize: '21px', fontWeight: 700 }}>
+        Regular Weekly Schedule
+      </h2>
 
       <div
         style={{

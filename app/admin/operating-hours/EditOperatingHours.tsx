@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState } from 'react'
@@ -20,9 +21,7 @@ export default function EditOperatingHours({
 
   const [open, setOpen] = useState(false)
   const [newOpenTime, setNewOpenTime] = useState(openTime.slice(0, 5))
-  const [newCloseTime, setNewCloseTime] = useState(
-    closeTime.slice(0, 5)
-  )
+  const [newCloseTime, setNewCloseTime] = useState(closeTime.slice(0, 5))
   const [newIsOpen, setNewIsOpen] = useState(isOpen)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
