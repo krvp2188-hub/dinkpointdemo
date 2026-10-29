@@ -93,6 +93,12 @@ const confirmedBookings = reportBookings.filter(
   booking => booking.status === 'confirmed' || booking.status === 'completed'
 )
 
+const totalBookedHours = confirmedBookings.reduce(
+  (total, booking) =>
+    total + getBookingHours(booking.start_time, booking.end_time),
+  0
+)
+
   const pendingBookings = reportBookings.filter(
     (booking) => booking.status === 'pending'
   )
@@ -350,6 +356,11 @@ const dailyReport = Array.from(
           <ReportCard
             title="Unpaid Revenue"
             value={`₱${unpaidRevenue.toLocaleString()}`}
+          />
+
+          <ReportCard
+            title="Total Hours Booked"
+            value={`${totalBookedHours.toFixed(2)} hrs`}
           />
         </div>
 

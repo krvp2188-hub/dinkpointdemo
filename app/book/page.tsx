@@ -197,8 +197,75 @@ const isTimeWithinOperatingHours = (
     loadCourts()
   }, [])
 
+
+
+  // Load court availability overrides
   useEffect(() => {
     if (!selectedDate) {
+      setSlotOverrides([])
+      return
+    }
+
+    let active = true
+    let requestInProgress = false
+
+    async function loadSlotOverrides() {
+      if (!active || requestInProgress) return
+
+      requestInProgress = true
+
+      try {
+        const response = await fetch(
+          `/api/court-availability?date=${encodeURIComponent(selectedDate)}`,
+          {
+            cache: 'no-store',
+            headers: { Accept: 'application/json' },
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error(
+            `Court availability request failed: ${response.status}`
+          )
+        }
+
+        const result = await response.json()
+
+        if (!Array.isArray(result.overrides)) {
+          throw new Error('Invalid court availability response.')
+        }
+
+        if (active) {
+          setSlotOverrides(result.overrides)
+        }
+      } catch (error) {
+        if (active) {
+          console.error(
+            'Could not load court availability overrides:',
+            error
+          )
+        }
+      } finally {
+        requestInProgress = false
+      }
+    }
+
+    void loadSlotOverrides()
+
+    const intervalId = window.setInterval(() => {
+      void loadSlotOverrides()
+    }, 10000)
+
+    return () => {
+      active = false
+      window.clearInterval(intervalId)
+    }
+  }, [selectedDate])
+
+  // Load existing customer bookings
+  useEffect(() => {
+    if (!selectedDate) {
+      setBookings([])
       return
     }
 
@@ -216,24 +283,23 @@ const isTimeWithinOperatingHours = (
         return
       }
 
-      const formattedBookings = (result.data || []).map(function (
-        booking: {
+      const formattedBookings = (result.data || []).map(
+        (booking: {
           court_id: string
           start_time: string
           status?: string
-        }
-      ) {
-        return {
+        }) => ({
           court_id: booking.court_id,
           start_time: booking.start_time,
           status: booking.status || 'confirmed',
-        }
-      })
+        })
+      )
 
       setBookings(formattedBookings)
     }
 
     void loadBookings()
+
     const intervalId = window.setInterval(() => {
       void loadBookings()
     }, 10000)
@@ -243,34 +309,7 @@ const isTimeWithinOperatingHours = (
       window.clearInterval(intervalId)
     }
   }, [selectedDate])
-  
 
-useEffect(() => {
-  if (!selectedDate) return
-
-  let active = true
-  async function loadSlotOverrides() {
-    try {
-      const response = await fetch(
-        `/api/court-availability?date=${encodeURIComponent(selectedDate)}`,
-        { cache: 'no-store' }
-      )
-      const result = await response.json()
-      if (active && response.ok) {
-        setSlotOverrides(Array.isArray(result.overrides) ? result.overrides : [])
-      }
-    } catch (error) {
-      console.error('Could not load court availability overrides:', error)
-    }
-  }
-
-  void loadSlotOverrides()
-  const intervalId = window.setInterval(() => void loadSlotOverrides(), 10000)
-  return () => {
-    active = false
-    window.clearInterval(intervalId)
-  }
-}, [selectedDate])
 
 
 useEffect(() => {
@@ -980,3 +1019,4 @@ async function createBooking() {
     </main>
   )
 }
+

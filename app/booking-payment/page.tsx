@@ -7,6 +7,9 @@ import html2canvas from 'html2canvas-pro'
 
 type PaymentSession = {
   bookingReference: string
+  customerName: string
+  customerEmail: string
+  receiptSubmitted: boolean
   totalAmount: number
   bookingDate: string
   slots: {
@@ -45,6 +48,7 @@ export default function BookingPaymentPage() {
   const [receipt, setReceipt] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
+  const [receiptSubmitted, setReceiptSubmitted] = useState(false)
 
   useEffect(() => {
     const urlToken = window.location.hash.startsWith('#token=')
@@ -95,6 +99,7 @@ export default function BookingPaymentPage() {
         }
 
         setSession(result as PaymentSession)
+        setReceiptSubmitted(Boolean((result as PaymentSession).receiptSubmitted))
       } catch {
         setError(
           'Unable to connect. Please check your internet and try again.'
@@ -132,6 +137,7 @@ export default function BookingPaymentPage() {
 
         if (active) {
           setSession(result)
+          setReceiptSubmitted(Boolean(result.receiptSubmitted))
         }
       } catch {
         // Retry at the next interval.
@@ -220,10 +226,8 @@ export default function BookingPaymentPage() {
         return
       }
 
-      setMessage(
-        result.message ||
-          'Receipt submitted. Please wait for staff verification.'
-      )
+      setMessage('')
+      setReceiptSubmitted(true)
       setReceipt(null)
       setTransactionReference('')
     } catch {
@@ -265,13 +269,24 @@ export default function BookingPaymentPage() {
   return (
     <main className="min-h-screen w-full bg-[#090909] text-white">
       <div className="mx-auto w-full max-w-lg px-4 py-6 sm:px-6">
-      <h1 className="text-3xl font-bold tracking-tight text-white">Complete Your Booking</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-white text-center">
+        {session.paymentStatus === 'paid'
+          ? 'Congratulations!, Your booking is confirmed.'
+          : receiptSubmitted
+            ? 'Court Reservation Verifying...'
+            : 'Complete Your Booking'}
+      </h1>
 
-      {session.paymentStatus === 'unpaid' && (
+      {receiptSubmitted && session.paymentStatus === 'unpaid' && (
+        <section className="mt-4 rounded-xl border border-emerald-500/50 bg-emerald-950/40 p-4 text-emerald-100">
+          <p className="font-semibold">Success!, Your slot is locked and we're verifying your payment.</p>
+        </section>
+      )}
+
+      {session.paymentStatus === 'unpaid' && !receiptSubmitted && (
         <section className="mt-4 rounded-xl border border-amber-500/60 bg-amber-950/40 p-4 text-amber-100">
           <p className="text-sm">
-            Your booking is pending until staff reviews your GCash payment receipt.
-            Please submit your receipt after payment and wait for confirmation.
+            Please submit your GCash receipt after payment. Your reservation will be marked pending while staff verifies the receipt.
           </p>
         </section>
       )}
@@ -285,7 +300,12 @@ export default function BookingPaymentPage() {
           Dink Point Pickleball
         </h2>
 
-        <h2 className="text-xl font-bold text-white">Your Selection</h2>
+        <h2 className="text-xl font-bold text-white">Reservation Details</h2>
+
+        <div className="mt-3 space-y-1 text-sm text-gray-200">
+          <p><strong>Name:</strong> {session.customerName || 'Not available'}</p>
+          <p className="break-all"><strong>Email:</strong> {session.customerEmail || 'Not available'}</p>
+        </div>
 
         <div className="mt-4 rounded-2xl border border-white/10 bg-[#1a1a1a] p-4 text-gray-100">
           <p>
@@ -391,7 +411,7 @@ export default function BookingPaymentPage() {
         </>
       )}
 
-      {session.paymentStatus === 'unpaid' && (
+      {session.paymentStatus === 'unpaid' && !receiptSubmitted && (
         <>
           <section className="mt-6 rounded-xl border border-white/15 bg-[#111111] p-4 text-white">
             <h2 className="text-xl font-semibold">Pay with GCash</h2>
