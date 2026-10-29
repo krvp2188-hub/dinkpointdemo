@@ -94,7 +94,7 @@ export default function ReportCharts({
                     width: '100%',
                     maxWidth: '42px',
                     height: `${Math.max(height, 4)}px`,
-                    background: '#2563eb',
+                    background: '#0f766e',
                     borderRadius: '6px 6px 0 0',
                   }}
                 />

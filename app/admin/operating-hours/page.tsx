@@ -62,19 +62,23 @@ export default async function OperatingHoursPage() {
     <AdminNav />
     <main
       style={{
-        padding: '30px',
-        color: '#1f2937',
-        background: '#f5f7fb',
+        padding: 0,
+        color: '#0f172a',
+        background: '#f8fafc',
         minHeight: '100vh',
-        maxWidth: '1000px',
-        margin: '0 auto',
+        width: '100%',
+        boxSizing: 'border-box',
       }}
     >
+      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: 'clamp(16px, 3vw, 30px)', boxSizing: 'border-box' }}>
+      <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#0f766e' }}>DINKPOINT PANABO · ADMIN</p>
       <h1
         style={{
           margin: '0 0 8px',
-          fontSize: '30px',
-          fontWeight: 700,
+          fontSize: '32px',
+          fontWeight: 800,
+          letterSpacing: '-0.025em',
+          color: '#020617',
         }}
       >
         Operating Hours
@@ -113,7 +117,7 @@ export default async function OperatingHoursPage() {
               alignItems: 'center',
               gap: '15px',
               padding: '18px',
-              color: '#1f2937',
+              color: '#0f172a',
               border: '1px solid #e5e7eb',
               borderRadius: '10px',
               background: '#ffffff',
@@ -173,6 +177,7 @@ export default async function OperatingHoursPage() {
 			/>
           </div>
         ))}
+      </div>
       </div>
     </main>
 	</>

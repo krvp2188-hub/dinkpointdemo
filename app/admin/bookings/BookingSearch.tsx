@@ -264,7 +264,7 @@ const updatePaymentStatus = async (
               onClick={() => setStatusFilter(filter.value)}
               className={
                 statusFilter === filter.value
-                  ? 'rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white'
+                  ? 'rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white'
                   : 'rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200'
               }
             >
@@ -359,7 +359,7 @@ const updatePaymentStatus = async (
                       <button
                         type="button"
                         onClick={() => setSelectedBooking(booking)}
-                        className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                        className="font-semibold text-teal-700 hover:text-blue-800 hover:underline"
                       >
                         {booking.booking_reference}
                       </button>
@@ -578,7 +578,7 @@ const updatePaymentStatus = async (
           type="button"
           disabled={actionLoading}
           onClick={() => updatePaymentStatus('paid')}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Mark as Paid
         </button>

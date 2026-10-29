@@ -104,11 +104,11 @@ export default function PaymentReceiptReview() {
   }
 
   return (
-    <section className="mt-8 rounded-xl border bg-white p-6 shadow-sm">
+    <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:mt-6 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">Pending GCash Receipts</h2>
-          <p className="mt-1 text-sm text-gray-600">
+          <h2 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">Pending GCash Receipts</h2>
+          <p className="mt-1 text-sm leading-5 text-slate-500">
             Verify the actual transaction before approving a payment.
           </p>
         </div>
@@ -119,56 +119,56 @@ export default function PaymentReceiptReview() {
             void loadReceipts()
           }}
           disabled={loading}
-          className="rounded-lg border px-4 py-2 disabled:opacity-50"
+          className="min-h-10 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
         >
           {loading ? 'Loading...' : 'Refresh'}
         </button>
       </div>
 
       {message && (
-        <p role="status" className="mt-4 rounded-lg bg-gray-100 p-3 text-sm">
+        <p role="status" className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
           {message}
         </p>
       )}
 
-      <div className="mt-8 border-t pt-6">
-        <h3 className="text-lg font-bold">Receipts awaiting review</h3>
+      <div className="mt-6 border-t border-slate-100 pt-5 sm:mt-8 sm:pt-6">
+        <h3 className="text-base font-bold text-slate-800 sm:text-lg">Receipts awaiting review</h3>
 
         {loading ? (
           <p className="mt-5">Loading pending receipts...</p>
         ) : receipts.length === 0 ? (
-          <p className="mt-5 text-gray-600">
+          <p className="mt-5 rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
             No pending receipts to review.
           </p>
         ) : (
-          <div className="mt-6 space-y-5">
+          <div className="mt-5 space-y-4 sm:mt-6 sm:space-y-5">
             {receipts.map((receipt) => (
               <article
                 key={receipt.id}
-                className="rounded-xl border p-4"
+                className="min-w-0 rounded-2xl border border-slate-200 p-4 sm:p-5"
               >
-                <p className="text-sm text-gray-500">Booking reference</p>
-                <p className="font-semibold">{receipt.bookingReference}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Booking reference</p>
+                <p className="mt-1 break-all font-bold text-slate-900">{receipt.bookingReference}</p>
 
-                <p className="mt-3 text-sm text-gray-500">
+                <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   GCash transaction reference
                 </p>
-                <p className="font-medium">{receipt.transactionReference}</p>
+                <p className="mt-1 break-words font-semibold text-slate-800">{receipt.transactionReference}</p>
 
-                <p className="mt-3 text-sm text-gray-500">Submitted</p>
-                <p>{new Date(receipt.submittedAt).toLocaleString()}</p>
+                <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Submitted</p>
+                <p className="mt-1 text-sm text-slate-800">{new Date(receipt.submittedAt).toLocaleString()}</p>
 
                 {receipt.imageUrl ? (
                   <a
                     href={receipt.imageUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-4 inline-block text-blue-700 underline"
+                    className="mt-4 inline-flex min-h-10 items-center rounded-lg bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800 underline"
                   >
                     Open private receipt image
                   </a>
                 ) : (
-                  <p className="mt-4 text-sm text-red-600">
+                  <p className="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
                     Receipt image unavailable. Do not approve without
                     verification.
                   </p>
@@ -177,7 +177,7 @@ export default function PaymentReceiptReview() {
                 <div className="mt-4">
                   <label
                     htmlFor={`note-${receipt.id}`}
-                    className="mb-1 block text-sm font-medium"
+                    className="mb-1 block text-sm font-semibold text-slate-700"
                   >
                     Staff note (optional)
                   </label>
@@ -192,17 +192,17 @@ export default function PaymentReceiptReview() {
                     }
                     maxLength={500}
                     rows={2}
-                    className="w-full rounded-lg border p-3"
+                    className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
                     placeholder="Record verification details or reason for rejection"
                   />
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-3">
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:flex sm:flex-wrap">
                   <button
                     type="button"
                     disabled={busyId !== ''}
                     onClick={() => void reviewReceipt(receipt, 'approve')}
-                    className="rounded-lg bg-green-700 px-4 py-2 font-semibold text-white disabled:opacity-50"
+                    className="min-h-11 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:opacity-50"
                   >
                     {busyId === receipt.id ? 'Processing...' : 'Approve'}
                   </button>
@@ -210,7 +210,7 @@ export default function PaymentReceiptReview() {
                     type="button"
                     disabled={busyId !== ''}
                     onClick={() => void reviewReceipt(receipt, 'reject')}
-                    className="rounded-lg border border-red-300 px-4 py-2 font-semibold text-red-700 disabled:opacity-50"
+                    className="min-h-11 rounded-xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-bold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
                   >
                     Reject Receipt
                   </button>

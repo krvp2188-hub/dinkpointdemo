@@ -167,7 +167,7 @@ export default async function CustomerDetailsPage({
           <div className="mb-6">
             <Link
               href="/admin/customers"
-              className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+              className="text-sm font-semibold text-teal-700 hover:text-blue-700"
             >
               ← Back to Customers
             </Link>
@@ -175,11 +175,11 @@ export default async function CustomerDetailsPage({
 
           {/* Customer header */}
           <div className="mb-8 rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <p className="font-semibold text-blue-600">
-              CUSTOMER
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-teal-700">
+              DINKPOINT PANABO · ADMIN
             </p>
 
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">
+            <h1 className="mt-2 text-[32px] font-extrabold tracking-tight text-slate-950">
               {customer.name}
             </h1>
 
@@ -322,7 +322,7 @@ export default async function CustomerDetailsPage({
 						<td className="px-6 py-4">
 						  <Link
 							href={`/admin/bookings?booking=${booking.id}`}
-							className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+							className="font-semibold text-teal-700 hover:text-blue-800 hover:underline"
 						  >
 							{booking.booking_reference}
 						  </Link>

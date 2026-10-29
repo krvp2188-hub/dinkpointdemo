@@ -251,8 +251,8 @@ const dailyReport = Array.from(
     <main
       style={{
         minHeight: '100vh',
-        background: '#f5f7fb',
-        color: '#1f2937',
+        background: '#f8fafc',
+        color: '#0f172a',
         padding: '32px',
       }}
     >
@@ -272,10 +272,13 @@ const dailyReport = Array.from(
           }}
         >
           <div>
+            <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#0f766e' }}>DINKPOINT PANABO · ADMIN</p>
             <h1
               style={{
                 fontSize: '32px',
-                fontWeight: 700,
+                fontWeight: 800,
+                letterSpacing: '-0.025em',
+                color: '#020617',
                 margin: 0,
               }}
             >
@@ -297,7 +300,7 @@ const dailyReport = Array.from(
             style={{
               padding: '12px 18px',
               borderRadius: '8px',
-              background: '#111827',
+              background: '#115e59',
               color: 'white',
               textDecoration: 'none',
             }}
@@ -367,7 +370,7 @@ const dailyReport = Array.from(
         <section
           style={{
             background: 'white',
-            color: '#1f2937',
+            color: '#0f172a',
             borderRadius: '12px',
             padding: '24px',
             marginBottom: '24px',
@@ -437,7 +440,7 @@ const dailyReport = Array.from(
         <section
           style={{
             background: 'white',
-            color: '#1f2937',
+            color: '#0f172a',
             borderRadius: '12px',
             padding: '24px',
             marginBottom: '24px',
@@ -519,7 +522,7 @@ function ReportCard({
     <div
       style={{
         background: 'white',
-        color: '#1f2937',
+        color: '#0f172a',
         borderRadius: '12px',
         padding: '20px',
         boxShadow: '0 2px 10px rgba(0,0,0,0.05)',

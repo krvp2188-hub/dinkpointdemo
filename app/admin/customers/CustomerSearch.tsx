@@ -117,7 +117,7 @@ export default function CustomerSearch({
 					<td className="px-6 py-4">
 					  <Link
 						href={`/admin/customers/${customer.id}`}
-						className="font-semibold text-blue-600 hover:text-blue-700"
+						className="font-semibold text-teal-700 hover:text-blue-700"
 					  >
 						{customer.name}
 					  </Link>

@@ -242,11 +242,11 @@ export default async function AdminBookingsPage({
 
         {/* Header */}
         <div className="mb-8">
-          <p className="font-semibold text-blue-600">
-            ADMIN
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-teal-700">
+            DINKPOINT PANABO · ADMIN
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold text-slate-900">
+          <h1 className="mt-2 text-[32px] font-extrabold tracking-tight text-slate-950">
             Booking Management
           </h1>
 
@@ -261,7 +261,7 @@ export default async function AdminBookingsPage({
             Total Bookings
           </p>
 
-          <p className="mt-1 text-3xl font-bold text-slate-900">
+          <p className="mt-1 text-[32px] font-extrabold tracking-tight text-slate-950">
             {bookings?.length ?? 0}
           </p>
         </div>

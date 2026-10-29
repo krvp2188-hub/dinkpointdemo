@@ -109,8 +109,8 @@ return (
     <main
 	style={{
 	  minHeight: '100vh',
-	  background: '#f5f7fb',
-	  color: '#1f2937',
+	  background: '#f8fafc',
+	  color: '#0f172a',
 	  padding: '32px',
 	}}
     >
@@ -129,10 +129,25 @@ return (
           }}
         >
           <div>
+            <p
+              style={{
+                margin: '0 0 10px',
+                color: '#0f766e',
+                fontSize: '12px',
+                fontWeight: 800,
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+              }}
+            >
+              DinkPoint Panabo · Admin workspace
+            </p>
             <h1
               style={{
-                fontSize: '32px',
-                fontWeight: 700,
+                fontSize: '36px',
+                lineHeight: 1.15,
+                fontWeight: 800,
+                letterSpacing: '-0.025em',
+                color: '#020617',
                 margin: 0,
               }}
             >
@@ -142,7 +157,10 @@ return (
             <p
               style={{
                 marginTop: '8px',
-                color: '#666',
+                marginBottom: 0,
+                color: '#475569',
+                fontSize: '16px',
+                lineHeight: 1.5,
               }}
             >
               Manage your pickleball bookings and payments.
@@ -154,7 +172,7 @@ return (
             style={{
               padding: '12px 18px',
               borderRadius: '8px',
-              background: '#111827',
+              background: '#115e59',
               color: 'white',
               textDecoration: 'none',
             }}
@@ -175,28 +193,40 @@ return (
   <DashboardCard
     title="Today's Bookings"
     value={todaysBookings.length}
+    description="Bookings scheduled today"
+    icon="▦"
+    tone="blue"
   />
 
   <DashboardCard
     title="Today's Revenue"
     value={`₱${todaysRevenue.toLocaleString()}`}
+    description="Paid bookings today"
+    icon="₱"
+    tone="amber"
   />
 
   <DashboardCard
     title="Pending Bookings"
     value={pendingBookings.length}
+    description="Awaiting action"
+    icon="◷"
+    tone="teal"
   />
 
   <DashboardCard
     title="Unpaid Bookings"
     value={unpaidBookings.length}
+    description="Payment not received"
+    icon="!"
+    tone="green"
   />
 </div>
 
         <section
           style={{
             background: 'white',
-			color: '#1f2937',
+			color: '#0f172a',
             borderRadius: '12px',
             padding: '24px',
             marginBottom: '24px',
@@ -452,38 +482,84 @@ return (
 function DashboardCard({
   title,
   value,
+  description,
+  icon,
+  tone,
 }: {
   title: string
   value: string | number
+  description: string
+  icon: string
+  tone: 'blue' | 'amber' | 'teal' | 'green'
 }) {
+  const tones = {
+    blue: { border: '#dbeafe', iconBg: '#e0f2fe', iconColor: '#0284c7', valueColor: '#0f172a' },
+    amber: { border: '#fde7b0', iconBg: '#fef3c7', iconColor: '#c2410c', valueColor: '#c2410c' },
+    teal: { border: '#99f6e4', iconBg: '#ccfbf1', iconColor: '#0f766e', valueColor: '#0f766e' },
+    green: { border: '#bbf7d0', iconBg: '#d1fae5', iconColor: '#047857', valueColor: '#047857' },
+  }
+  const colors = tones[tone]
+
   return (
-    <div
+    <article
       style={{
-        background: 'white',
-        borderRadius: '12px',
-        padding: '20px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+        background: '#ffffff',
+        border: `1px solid ${colors.border}`,
+        borderRadius: '16px',
+        padding: '22px 20px 18px',
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.08)',
+        minWidth: 0,
       }}
     >
-      <div
-        style={{
-          color: '#666',
-          fontSize: '14px',
-          marginBottom: '8px',
-        }}
-      >
-        {title}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div
+          aria-hidden="true"
+          style={{
+            width: '44px',
+            height: '44px',
+            flex: '0 0 44px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '12px',
+            background: colors.iconBg,
+            color: colors.iconColor,
+            fontSize: '25px',
+            fontWeight: 700,
+          }}
+        >
+          {icon}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              color: '#334155',
+              fontSize: '14px',
+              lineHeight: 1.35,
+              fontWeight: 700,
+            }}
+          >
+            {title}
+          </div>
+          <div
+            style={{
+              marginTop: '4px',
+              color: colors.valueColor,
+              fontSize: '32px',
+              lineHeight: 1.1,
+              fontWeight: 800,
+              letterSpacing: '-0.025em',
+              overflowWrap: 'anywhere',
+            }}
+          >
+            {value}
+          </div>
+        </div>
       </div>
-
-      <div
-        style={{
-          fontSize: '28px',
-          fontWeight: 700,
-        }}
-      >
-        {value}
-      </div>
-    </div>
+      <p style={{ margin: '14px 0 0', color: '#64748b', fontSize: '12px', lineHeight: 1.4 }}>
+        {description}
+      </p>
+    </article>
   )
 }
 

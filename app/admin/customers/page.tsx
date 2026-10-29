@@ -128,11 +128,11 @@ const customerRows = (customers ?? []).map(
 
           {/* Header */}
           <div className="mb-8">
-            <p className="font-semibold text-blue-600">
+            <p className="font-semibold text-teal-700">
               ADMIN
             </p>
 
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">
+            <h1 className="mt-2 text-[32px] font-extrabold tracking-tight text-slate-950">
               Customer Management
             </h1>
 
@@ -147,7 +147,7 @@ const customerRows = (customers ?? []).map(
               Total Customers
             </p>
 
-            <p className="mt-1 text-3xl font-bold text-slate-900">
+            <p className="mt-1 text-[32px] font-extrabold tracking-tight text-slate-950">
               {customers?.length ?? 0}
             </p>
           </div>
