@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -76,6 +76,7 @@ export default function BookingPage() {
   const [adminMessage, setAdminMessage] = useState('')
 
   const [selectedDate, setSelectedDate] = useState('')
+  const moreDateInputRef = useRef<HTMLInputElement>(null)
   const [currentDateTime, setCurrentDateTime] = useState({ date: '', time: '' })
   const [selectedSlots, setSelectedSlots] = useState<{ courtId: string; time: string }[]>([])
 
@@ -542,22 +543,98 @@ async function createBooking() {
           </p>
         </div>
 
-        <div className="mb-8 rounded-2xl border border-[#E5EAE3] bg-white p-6 shadow-sm">
-          <label className="mb-2 block font-bold text-[#263F34]">
-            Select Date
-          </label>
+        <div className="mb-8 rounded-2xl border border-[#E5EAE3] bg-white p-3 shadow-[0_5px_18px_rgba(75,35,48,0.06)] sm:p-4">
+          <div className="flex items-stretch gap-2 overflow-x-auto pb-1">
+            {Array.from({ length: 15 }, (_, index) => {
+              const baseDate = currentDateTime.date || selectedDate
+              const date = new Date(`${baseDate}T12:00:00`)
+              date.setDate(date.getDate() + index)
 
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={function (event) {
-              setSelectedDate(event.target.value)
-              setSelectedSlots([])
-              setMessage('')
-              setBookingReference('')
-            }}
-            className="rounded-xl border border-[#DCE3DC] bg-white px-4 py-3 text-[#263F34] outline-none transition focus:border-[#9676A5] focus:ring-2 focus:ring-[#9676A5]/20"
-          />
+              const dateValue = [
+                date.getFullYear(),
+                String(date.getMonth() + 1).padStart(2, '0'),
+                String(date.getDate()).padStart(2, '0'),
+              ].join('-')
+              const weekday = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()
+              const day = date.getDate()
+              const month = date.toLocaleDateString('en-US', { month: 'short' })
+              const isToday = dateValue === (currentDateTime.date || selectedDate)
+              const isSelected = dateValue === selectedDate
+
+              return (
+                <button
+                  key={dateValue}
+                  type="button"
+                  onClick={() => {
+                    setSelectedDate(dateValue)
+                    setSelectedSlots([])
+                    setMessage('')
+                    setBookingReference('')
+                  }}
+                  aria-pressed={isSelected}
+                  className={`flex min-w-[66px] shrink-0 flex-col items-center justify-center rounded-2xl border px-3 py-3 text-center transition sm:min-w-[68px] ${
+                    isSelected
+                      ? 'border-[#263F34] bg-[#263F34] text-white shadow-sm'
+                      : 'border-[#E5EAE3] bg-white text-[#263F34] hover:border-[#D6E3A6] hover:bg-[#F7F8F5]'
+                  }`}
+                >
+                  <span className={`text-[10px] font-extrabold tracking-[0.12em] ${isSelected ? 'text-white/90' : 'text-[#53635A]'}`}>
+                    {isToday ? 'TODAY' : weekday}
+                  </span>
+                  <span className="mt-1 text-2xl font-black leading-none">{day}</span>
+                  <span className={`mt-1 text-[11px] font-medium ${isSelected ? 'text-white/90' : 'text-[#53635A]'}`}>
+                    {month}
+                  </span>
+                </button>
+              )
+            })}
+
+            <div className="relative flex min-w-[68px] shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const picker = moreDateInputRef.current
+                  if (!picker) return
+
+                  try {
+                    if (typeof picker.showPicker === 'function') {
+                      picker.showPicker()
+                    } else {
+                      picker.focus()
+                      picker.click()
+                    }
+                  } catch {
+                    picker.focus()
+                    picker.click()
+                  }
+                }}
+                className="flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#9676A5] bg-white px-3 py-3 text-center text-[#263F34] transition hover:bg-[#F1EAF5]"
+                aria-label="Open calendar to choose another date"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="mb-2 h-5 w-5">
+                  <rect x="3.5" y="5" width="17" height="15" rx="2" />
+                  <path d="M7.5 3v4M16.5 3v4M3.5 9.5h17" />
+                </svg>
+                <span className="text-xs font-bold">More</span>
+              </button>
+              <input
+                ref={moreDateInputRef}
+                type="date"
+                value={selectedDate}
+                onChange={(event) => {
+                  if (!event.target.value) return
+                  setSelectedDate(event.target.value)
+                  setSelectedSlots([])
+                  setMessage('')
+                  setBookingReference('')
+                }}
+                min={currentDateTime.date || undefined}
+                aria-label="Choose another booking date"
+                tabIndex={-1}
+                className="pointer-events-none absolute left-0 top-0 h-px w-px opacity-0"
+              />
+            </div>
+          </div>
         </div>
 
         {isAdmin && (
@@ -575,7 +652,7 @@ async function createBooking() {
           <table className="w-full min-w-[900px] border-collapse">
             <thead>
               <tr className="border-b bg-[#F2F4EF]">
-                <th className="p-4 text-left">
+                <th className="w-[110px] min-w-[110px] max-w-[110px] p-3 text-left">
                   Time
                 </th>
 
@@ -657,8 +734,15 @@ async function createBooking() {
         key={time}
         className="border-b border-[#E8EDE8] last:border-b-0"
       >
-        <td className="whitespace-nowrap bg-[#FAFBF8] p-4 font-bold text-[#263F34]">
-          {formatTime(time)}–{formatTime(endTime)}
+        <td className="w-[110px] min-w-[110px] max-w-[110px] whitespace-nowrap border-r border-[#E5EAE3] bg-[#F7F8F5] px-3 py-2 text-left align-middle">
+          <div className="flex flex-col items-start leading-tight">
+            <span className="text-sm font-extrabold text-[#263F34] sm:text-base">
+              {formatTime(time)}
+            </span>
+            <span className="mt-0.5 text-[11px] font-medium text-[#53635A]">
+              to {formatTime(endTime)}
+            </span>
+          </div>
         </td>
 
         {courts.map(function (court) {
@@ -725,12 +809,12 @@ async function createBooking() {
                   onClick={() => selectSlot(court.id, time)}
                   className={
                     booked && statusLabel === 'Pending'
-                      ? 'w-full cursor-not-allowed rounded-xl bg-green-100 px-3 py-3 text-sm font-semibold text-green-800 border border-green-300'
+                      ? 'w-full cursor-not-allowed rounded-xl bg-green-100 px-3 py-2 text-sm font-semibold text-green-800 border border-green-300'
                       : booked
-                      ? 'w-full cursor-not-allowed rounded-xl bg-red-100 px-3 py-3 text-sm font-semibold text-red-800 border border-red-300'
+                      ? 'w-full cursor-not-allowed rounded-xl bg-red-100 px-3 py-2 text-sm font-semibold text-red-800 border border-red-300'
                       : selected
-                      ? 'w-full rounded-xl bg-[#9676A5] px-3 py-3 text-sm font-bold text-white transition hover:bg-[#79558C]'
-                      : 'w-full rounded-xl bg-[#F1EAF5] px-3 py-3 text-sm font-bold text-[#79558C] transition hover:bg-[#E5D9EC]'
+                      ? 'w-full rounded-xl bg-[#9676A5] px-3 py-2 text-sm font-bold text-white transition hover:bg-[#79558C]'
+                      : 'w-full rounded-xl bg-[#F1EAF5] px-3 py-2 text-sm font-bold text-[#79558C] transition hover:bg-[#E5D9EC]'
                   }
                 >
                   {booked ? statusLabel : selected ? '✓ Selected' : statusLabel}
