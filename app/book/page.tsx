@@ -652,7 +652,7 @@ async function createBooking() {
           <table className="w-full min-w-[900px] border-collapse">
             <thead>
               <tr className="border-b bg-[#F2F4EF]">
-                <th className="w-[110px] min-w-[110px] max-w-[110px] p-3 text-left">
+                <th className="w-[120px] min-w-[120px] max-w-[120px] p-3 text-left">
                   Time
                 </th>
 
@@ -734,7 +734,7 @@ async function createBooking() {
         key={time}
         className="border-b border-[#E8EDE8] last:border-b-0"
       >
-        <td className="w-[110px] min-w-[110px] max-w-[110px] whitespace-nowrap border-r border-[#E5EAE3] bg-[#F7F8F5] px-3 py-2 text-left align-middle">
+        <td className="w-[120px] min-w-[120px] max-w-[120px] whitespace-nowrap border-r border-[#E5EAE3] bg-[#F7F8F5] px-3 py-2 text-left align-middle">
           <div className="flex flex-col items-start leading-tight">
             <span className="text-sm font-extrabold text-[#263F34] sm:text-base">
               {formatTime(time)}
