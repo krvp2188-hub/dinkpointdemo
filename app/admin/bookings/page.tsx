@@ -61,6 +61,7 @@ function formatDate(date: string) {
 type AdminBookingsPageProps = {
   searchParams: Promise<{
     booking?: string
+    view?: string
   }>
 }
 
@@ -94,7 +95,7 @@ export default async function AdminBookingsPage({
   }
 
   // Load all bookings
-  const { data: bookings, error } = await supabase
+  let bookingsQuery = supabase
     .from('bookings')
     .select(
       `
@@ -111,9 +112,16 @@ export default async function AdminBookingsPage({
         amount,
         status,
         payment_status,
-        created_at
+        created_at,
+        archived_at
       `
     )
+
+  bookingsQuery = params.view === 'archived'
+    ? bookingsQuery.not('archived_at', 'is', null)
+    : bookingsQuery.is('archived_at', null)
+
+  const { data: bookings, error } = await bookingsQuery
     .order('booking_date', { ascending: false })
     .order('start_time', { ascending: true })
 
@@ -125,7 +133,7 @@ export default async function AdminBookingsPage({
         <div className="mx-auto max-w-7xl">
           <div className="rounded-2xl bg-white p-8 shadow-sm">
             <h1 className="text-2xl font-bold text-slate-900">
-              Booking Management
+              {params.view === 'archived' ? 'Archived Bookings' : 'Booking Management'}
             </h1>
 
             <p className="mt-3 text-red-600">
@@ -247,18 +255,23 @@ export default async function AdminBookingsPage({
           </p>
 
           <h1 className="mt-2 text-[32px] font-extrabold tracking-tight text-slate-950">
-            Booking Management
+            {params.view === 'archived' ? 'Archived Bookings' : 'Booking Management'}
           </h1>
 
           <p className="mt-2 text-slate-600">
-            View and manage all court bookings.
+            {params.view === 'archived' ? 'Review archived cancelled bookings and restore them when needed.' : 'View and manage all court bookings.'}
           </p>
+        </div>
+
+        <div className="mb-6 flex flex-wrap gap-3">
+          <a href="/admin/bookings" className={`rounded-lg px-4 py-2 text-sm font-semibold ${params.view !== 'archived' ? 'bg-teal-700 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200'}`}>Active Bookings</a>
+          <a href="/admin/bookings?view=archived" className={`rounded-lg px-4 py-2 text-sm font-semibold ${params.view === 'archived' ? 'bg-teal-700 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200'}`}>Archived Bookings</a>
         </div>
 
         {/* Booking count */}
         <div className="mb-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <p className="text-sm text-slate-500">
-            Total Bookings
+            {params.view === 'archived' ? 'Archived Bookings' : 'Active Bookings'}
           </p>
 
           <p className="mt-1 text-[32px] font-extrabold tracking-tight text-slate-950">
@@ -278,7 +291,7 @@ export default async function AdminBookingsPage({
             </h2>
 
             <p className="mt-2 text-slate-600">
-              There are currently no bookings in the system.
+              {params.view === 'archived' ? 'There are no archived bookings.' : 'There are currently no active bookings.'}
             </p>
           </div>
         )}
@@ -288,6 +301,8 @@ export default async function AdminBookingsPage({
 <BookingSearch
   bookings={bookingRows}
   initialSelectedBookingId={params.booking}
+  isArchivedView={params.view === 'archived'}
+  isAdmin={profile.role === 'admin'}
 />
         )}
 		

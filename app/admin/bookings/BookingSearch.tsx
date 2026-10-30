@@ -23,12 +23,14 @@ type Props = {
   bookings: BookingRow[]
   initialSelectedBookingId?: string
   isArchivedView?: boolean
+  isAdmin?: boolean
 }
 
 export default function BookingSearch({
   bookings,
   initialSelectedBookingId,
   isArchivedView = false,
+  isAdmin = false,
 }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -131,13 +133,13 @@ const updatePaymentStatus = async (
 }
 
 
-  // TEMPORARY ADMIN CLEANUP FEATURE:
-  // Remove this handler and its button after the test-booking cleanup is complete.
+  // TEMPORARY ADMIN-ONLY CLEANUP FEATURE.
+  // Remove this handler and its UI after the booking cleanup is complete.
   const permanentlyDeleteBooking = async () => {
-    if (!selectedBooking) return
+    if (!isAdmin || !selectedBooking) return
 
     const confirmed = window.confirm(
-      `PERMANENTLY DELETE booking ${selectedBooking.booking_reference}?\n\nThis cannot be undone. The booking record will be removed from the database.`
+      `PERMANENTLY DELETE booking ${selectedBooking.booking_reference}?\n\nThis action cannot be undone.`
     )
     if (!confirmed) return
 
@@ -708,23 +710,24 @@ const updatePaymentStatus = async (
   )}
 
 
-  {/* TEMPORARY ADMIN-ONLY CLEANUP CONTROL. Remove after test-booking cleanup. */}
-  <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4">
-    <p className="text-sm font-semibold text-red-800">
-      Permanent deletion (temporary)
-    </p>
-    <p className="mt-1 text-xs text-red-700">
-      Permanently removes this booking. This action cannot be undone.
-    </p>
-    <button
-      type="button"
-      disabled={actionLoading}
-      onClick={permanentlyDeleteBooking}
-      className="mt-3 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      {actionLoading ? 'Please wait...' : 'Permanently Delete Booking'}
-    </button>
-  </div>
+  {isAdmin && (
+    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4">
+      <p className="text-sm font-semibold text-red-800">
+        Temporary permanent deletion
+      </p>
+      <p className="mt-1 text-xs text-red-700">
+        Permanently removes this booking from the database. This cannot be undone.
+      </p>
+      <button
+        type="button"
+        disabled={actionLoading}
+        onClick={permanentlyDeleteBooking}
+        className="mt-3 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {actionLoading ? 'Please wait...' : 'Permanently Delete Booking'}
+      </button>
+    </div>
+  )}
 
   {(isArchivedView || selectedBooking.status === 'cancelled') && (
     <div className="mb-4">
