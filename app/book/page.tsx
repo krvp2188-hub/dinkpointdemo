@@ -760,11 +760,14 @@ async function createBooking() {
       isOvernight && slotMinutes < closeMinutes
         ? slotMinutes + 24 * 60
         : slotMinutes
+    // Compare the current Manila clock against the selected operating date.
+    // The selected date represents the day the 6:00 AM schedule opens.
+    // Early-morning slots (00:00 and 01:00) belong to the end of that
+    // operating schedule, so they are placed after midnight on the next day.
+    // At 1:00 AM on the selected date, the 6:00 AM opening is still ahead;
+    // do not incorrectly move the current time to the overnight tail.
     const currentHourMinutes = Math.floor(nowMinutes / 60) * 60
-    const adjustedNowMinutes =
-      isOvernight && currentHourMinutes < closeMinutes
-        ? currentHourMinutes + 24 * 60
-        : currentHourMinutes
+    const adjustedNowMinutes = currentHourMinutes
 
     // Keep the current hourly slot visible until the next hour begins.
     return adjustedSlotMinutes >= adjustedNowMinutes
