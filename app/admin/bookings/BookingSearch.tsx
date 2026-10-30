@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 type BookingRow = {
@@ -21,12 +22,15 @@ type BookingRow = {
 type Props = {
   bookings: BookingRow[]
   initialSelectedBookingId?: string
+  isArchivedView?: boolean
 }
 
 export default function BookingSearch({
   bookings,
   initialSelectedBookingId,
+  isArchivedView = false,
 }: Props) {
+  const router = useRouter()
   const [search, setSearch] = useState('')
 
   const [statusFilter, setStatusFilter] = useState('all')
@@ -55,6 +59,7 @@ useEffect(() => {
 }, [bookings, initialSelectedBookingId])
 	
   const [actionLoading, setActionLoading] = useState(false)
+  const [selectedBookingIds, setSelectedBookingIds] = useState<string[]>([])
 	
   const [actionError, setActionError] = useState('')
   
@@ -125,6 +130,130 @@ const updatePaymentStatus = async (
   }
 }
 
+
+  // TEMPORARY ADMIN CLEANUP FEATURE:
+  // Remove this handler and its button after the test-booking cleanup is complete.
+  const permanentlyDeleteBooking = async () => {
+    if (!selectedBooking) return
+
+    const confirmed = window.confirm(
+      `PERMANENTLY DELETE booking ${selectedBooking.booking_reference}?\n\nThis cannot be undone. The booking record will be removed from the database.`
+    )
+    if (!confirmed) return
+
+    setActionLoading(true)
+    setActionError('')
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.rpc('admin_delete_booking_permanently', {
+        p_booking_id: selectedBooking.id,
+      })
+      if (error) throw error
+
+      setSelectedBooking(null)
+      setSelectedBookingIds((current) =>
+        current.filter((id) => id !== selectedBooking.id)
+      )
+      router.refresh()
+    } catch (error) {
+      console.error('PERMANENT BOOKING DELETE ERROR:', error)
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to permanently delete this booking.'
+      )
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const archiveOrRestoreBooking = async () => {
+    if (!selectedBooking) return
+
+    if (!isArchivedView && selectedBooking.status !== 'cancelled') {
+      setActionError('Only cancelled bookings can be archived.')
+      return
+    }
+
+    const message = isArchivedView
+      ? 'Restore this booking to the active bookings list?'
+      : 'Archive this cancelled booking? Its booking and payment history will be preserved.'
+
+    if (!window.confirm(message)) return
+
+    setActionLoading(true)
+    setActionError('')
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.rpc(
+        isArchivedView ? 'restore_archived_booking' : 'archive_cancelled_booking',
+        { p_booking_id: selectedBooking.id }
+      )
+      if (error) throw error
+      setSelectedBooking(null)
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      setActionError(
+        error instanceof Error ? error.message : 'Unable to update archive status.'
+      )
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+
+  const toggleBookingSelection = (bookingId: string) => {
+    setSelectedBookingIds((current) =>
+      current.includes(bookingId)
+        ? current.filter((id) => id !== bookingId)
+        : [...current, bookingId]
+    )
+  }
+
+  const toggleSelectAllVisibleCancelled = () => {
+    const visibleIds = cancellableVisibleBookings.map((booking) => booking.id)
+    const allSelected = visibleIds.length > 0 &&
+      visibleIds.every((id) => selectedBookingIds.includes(id))
+
+    setSelectedBookingIds((current) =>
+      allSelected
+        ? current.filter((id) => !visibleIds.includes(id))
+        : Array.from(new Set([...current, ...visibleIds]))
+    )
+  }
+
+  const archiveSelectedBookings = async () => {
+    if (selectedBookingIds.length === 0) return
+
+    const confirmed = window.confirm(
+      `Archive ${selectedBookingIds.length} selected cancelled booking(s)? Their booking and payment history will be preserved.`
+    )
+    if (!confirmed) return
+
+    setActionLoading(true)
+    setActionError('')
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.rpc('archive_cancelled_bookings', {
+        p_booking_ids: selectedBookingIds,
+      })
+      if (error) throw error
+      setSelectedBookingIds([])
+      setSelectedBooking(null)
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      setActionError(
+        error instanceof Error ? error.message : 'Unable to archive selected bookings.'
+      )
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const filteredBookings = useMemo(() => {
     const query = search.trim().toLowerCase()
 
@@ -178,6 +307,10 @@ const updatePaymentStatus = async (
       return b.created_at.localeCompare(a.created_at)
     })
   }, [bookings, search, statusFilter, dateFilter, paymentFilter, sortBy])
+
+  const cancellableVisibleBookings = filteredBookings.filter(
+    (booking) => booking.status === 'cancelled'
+  )
 
   return (
     <div>
@@ -293,6 +426,37 @@ const updatePaymentStatus = async (
             </button>
           ))}
         </div>
+        {!isArchivedView && (
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={toggleSelectAllVisibleCancelled}
+                disabled={cancellableVisibleBookings.length === 0 || actionLoading}
+                className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {cancellableVisibleBookings.length > 0 &&
+                cancellableVisibleBookings.every((booking) => selectedBookingIds.includes(booking.id))
+                  ? 'Deselect visible cancelled'
+                  : 'Select visible cancelled'}
+              </button>
+              <span className="text-sm text-slate-600">
+                {selectedBookingIds.length} cancelled booking(s) selected
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={archiveSelectedBookings}
+              disabled={selectedBookingIds.length === 0 || actionLoading}
+              className="rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {actionLoading ? 'Please wait...' : `Archive Selected (${selectedBookingIds.length})`}
+            </button>
+          </div>
+        )}
+        {actionError && !selectedBooking && (
+          <p className="mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{actionError}</p>
+        )}
       </div>
 
       {filteredBookings.length === 0 ? (
@@ -315,6 +479,18 @@ const updatePaymentStatus = async (
             <table className="w-full min-w-[1100px] text-left">
               <thead className="border-b bg-slate-50">
                 <tr>
+                  {!isArchivedView && (
+                    <th className="px-4 py-4 text-sm font-semibold text-slate-700">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all visible cancelled bookings"
+                        checked={cancellableVisibleBookings.length > 0 && cancellableVisibleBookings.every((booking) => selectedBookingIds.includes(booking.id))}
+                        onChange={toggleSelectAllVisibleCancelled}
+                        disabled={cancellableVisibleBookings.length === 0}
+                        className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+                      />
+                    </th>
+                  )}
                   <th className="px-5 py-4 text-sm font-semibold text-slate-700">
                     Reference
                   </th>
@@ -355,6 +531,21 @@ const updatePaymentStatus = async (
                     key={booking.id}
                     className="border-b last:border-b-0"
                   >
+                    {!isArchivedView && (
+                      <td className="px-4 py-4">
+                        {booking.status === 'cancelled' ? (
+                          <input
+                            type="checkbox"
+                            aria-label={`Select booking ${booking.booking_reference}`}
+                            checked={selectedBookingIds.includes(booking.id)}
+                            onChange={() => toggleBookingSelection(booking.id)}
+                            className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+                          />
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-5 py-4">
                       <button
                         type="button"
@@ -513,6 +704,41 @@ const updatePaymentStatus = async (
   {actionError && (
     <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
       {actionError}
+    </div>
+  )}
+
+
+  {/* TEMPORARY ADMIN-ONLY CLEANUP CONTROL. Remove after test-booking cleanup. */}
+  <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4">
+    <p className="text-sm font-semibold text-red-800">
+      Permanent deletion (temporary)
+    </p>
+    <p className="mt-1 text-xs text-red-700">
+      Permanently removes this booking. This action cannot be undone.
+    </p>
+    <button
+      type="button"
+      disabled={actionLoading}
+      onClick={permanentlyDeleteBooking}
+      className="mt-3 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {actionLoading ? 'Please wait...' : 'Permanently Delete Booking'}
+    </button>
+  </div>
+
+  {(isArchivedView || selectedBooking.status === 'cancelled') && (
+    <div className="mb-4">
+      <button
+        type="button"
+        disabled={actionLoading}
+        onClick={archiveOrRestoreBooking}
+        className={`rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 ${isArchivedView ? 'bg-teal-700 hover:bg-teal-800' : 'bg-slate-700 hover:bg-slate-800'}`}
+      >
+        {actionLoading ? 'Please wait...' : isArchivedView ? 'Restore Booking' : 'Archive Booking'}
+      </button>
+      <p className="mt-2 text-xs text-slate-500">
+        {isArchivedView ? 'Restoring makes this cancelled booking visible in the active list again.' : 'Only cancelled bookings can be archived. Records are retained, not deleted.'}
+      </p>
     </div>
   )}
 
